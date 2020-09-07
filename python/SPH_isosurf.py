@@ -28,9 +28,9 @@ class Sph_isosurf:
     def isosurfOBJ(self, stepIdx, dataIdx, value, path):
         if not self._ready:
             return False
-        if dataIdx >= self._d._veclen or dataIdx < VECLEN:
+        if dataIdx >= self._d._veclen or dataIdx < self.VECLEN:
             return False
-        if dataIdx == VECLEN and self._d._veclen != 3:
+        if dataIdx == self.VECLEN and self._d._veclen != 3:
             return False
         
         if not self._d.setCurStepIdx(stepIdx):
@@ -42,7 +42,7 @@ class Sph_isosurf:
         else:
             wd = np.array(0, dtype=np.float32)
             wd.resize(dimSz)
-            if dataIdx == VECLEN:
+            if dataIdx == self.VECLEN:
                 for i in range(dimSz):
                     wd[i] = np.linalg.norm(self._d._curData._data[i*3:i*3+3],
                                            ord=2)
@@ -56,12 +56,12 @@ class Sph_isosurf:
         with open(path, 'w') as f:
             f.write('o isosurf_data\n')
             for v in verts:
-                f.write('v {} {} {}\n'.format((v[0], v[1], v[2])))
-            for vn in normnals:
-                f.write('vn {} {} {}\n'.format((vn[0], vn[1], vn[2])))
+                f.write('v {} {} {}\n'.format(*v))
+            for vn in normals:
+                f.write('vn {} {} {}\n'.format(*vn))
             for tri in faces:
                 f.write('f {}//{} {}//{} {}//{}\n'.format(
-                    (tri[0],tri[0], tri[1],tri[1], tri[2],tri[2])))
+                    tri[0]+1,tri[0]+1, tri[1]+1,tri[1]+1, tri[2]+1,tri[2]+1))
 
         return True
     
