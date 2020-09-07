@@ -2,12 +2,10 @@ import threading
 import time
 
 import TSData
-e = threading.Event()
 
 def Loader(d):
-    d.loadCheck(['p_001.sph', 'p_002.sph', 'p_003.sph'],
+    d.loadCheck(['uvw_010.sph', 'uvw_020.sph', 'uvw_030.sph'],
                 '/Users/yoh/Works/Vtools/data/obstacle')
-    e.set()
 
 d = TSData.TSDataSph()
 t = threading.Thread(target=Loader, args=([d]))
@@ -17,6 +15,9 @@ t.start()
 for i in range(10):
     time.sleep(0.3)
     print(d._curIdx)
-    if e.is_set(): break
+    if not d._evt.is_set():
+        break
     
+t.join()
+print(d._minMaxList)
 print('done.')

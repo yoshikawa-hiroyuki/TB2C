@@ -6,9 +6,11 @@ TSData represents time-series data
 
 import sys, os
 from pySPH import SPH
+import threading
 
 class TSData:
     def __init__(self) -> None:
+        self._evt = threading.Event()
         self.reset()
         return
 
@@ -20,6 +22,7 @@ class TSData:
         self._fileList = []
         self._curData = None
         self._curIdx = 0
+        self._evt.clear()
         return
 
 class TSDataSph(TSData):
@@ -38,7 +41,8 @@ class TSDataSph(TSData):
     
     def loadCheck(self, fnlist, basedir='.'):
         self.reset()
-
+        self._evt.set()
+        
         # read the first data
         try:
             fn = fnlist[0]
@@ -101,7 +105,11 @@ class TSDataSph(TSData):
             self._curIdx = idx
             continue # en of for(idx)
 
-        return self.setCurStepIdx(0)
+        if not self.setCurStepIdx(0):
+            self.reset()
+            return False
+        self._evt.clear()
+        return True
     
     def setCurStepIdx(self, idx):
         if not self._ready:
