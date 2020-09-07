@@ -63,6 +63,7 @@ class TSDataSph(TSData):
         self._fileList.append(fn)
         self._curData = sph
         self._curIdx = 0
+        self._ready = True
 
         # read following data
         for idx in range(1, len(fnlist)):
@@ -99,6 +100,25 @@ class TSDataSph(TSData):
             self._curData = sph
             self._curIdx = idx
             continue # en of for(idx)
-        
+
+        return self.setCurStepIdx(0)
+    
+    def setCurStepIdx(self, idx):
+        if not self._ready:
+            return False
+        if idx == self._curIdx:
+            return True
+        xidx = idx
+        if xidx < 0:
+            xidx = 0
+        elif xidx >= len(self._stepList):
+            xidx = self._stepList -1
+
+        sph = SPH.SPH()
+        if not sph.load(self._fileList[xidx]):
+            self.reset()
+            return False
+        self._curData = sph
+        self._curIdx = xidx
         return True
     
