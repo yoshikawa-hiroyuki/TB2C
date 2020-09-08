@@ -5,6 +5,7 @@ TSData represents time-series data
 """
 
 import sys, os
+from typing import Iterable
 from pySPH import SPH
 import threading
 
@@ -39,7 +40,7 @@ class TSDataSph(TSData):
         self._bbox = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
         return
     
-    def loadCheck(self, fnlist, basedir='.'):
+    def loadCheck(self, fnlist: Iterable, basedir: str ='.') -> bool:
         self.reset()
         self._evt.set()
         
@@ -111,7 +112,7 @@ class TSDataSph(TSData):
         self._evt.clear()
         return True
     
-    def setCurStepIdx(self, idx):
+    def setCurStepIdx(self, idx: int) -> bool:
         if not self._ready:
             return False
         if idx == self._curIdx:

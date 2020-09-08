@@ -7,14 +7,14 @@ SPH_isosurf
 import sys, os
 import numpy as np
 from pySPH import SPH
-import TSData
+from TSData import TSDataSph
 from skimage import measure
 
 
 class Sph_isosurf:
     VECLEN = -1
     
-    def __init__(self, d) -> None:
+    def __init__(self, d: TSDataSph) -> None:
         self._d = None
         self._ready = False
         if d._dtype != 'SPH':
@@ -25,7 +25,8 @@ class Sph_isosurf:
         self._ready = True
         return
 
-    def isosurfOBJ(self, stepIdx, dataIdx, value, path):
+    def isosurfOBJ(self, stepIdx: int, dataIdx: int, value: float, path: str) \
+        -> bool:
         if not self._ready:
             return False
         if dataIdx >= self._d._veclen or dataIdx < self.VECLEN:
