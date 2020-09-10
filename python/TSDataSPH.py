@@ -134,20 +134,33 @@ class TSDataSPH(TSData):
         sph._veclen = 1
         sph._step = self._stepList[self._curIdx]
         sph._time = self._timeList[self._curIdx]
-        sph._min = [self._minMaxList[self._curIdx][0]]
-        sph._max = [self._minMaxList[self._curIdx][1]]
 
         if dataIdx == 0 and self._datalen == 0:
             sph._data = self._curData._data
+            sph._min = [self._minMaxList[0][0]]
+            sph._max = [self._minMaxList[0][1]]
         else:
             sph._data = np.array(0, dtype=np.float32)
             dimSz = sph._dims[0] * sph._dims[1] * sph._dims[2]
             sph._data.resize(dimSz)
             if dataIdx == self.VECMAG:
+                vl = np.linalg.norm(self._curData._data[0:3], ord=2)
+                sph._min = [vl]
+                sph._max = [vl]
                 for i in range(dimSz):
-                    sph._data[i] = \
-                        np.linalg.norm(self._curData._data[i*3:i*3+3], ord=2)
+                    vl = np.linalg.norm(self._curData._data[i*3:i*3+3], ord=2)
+                    sph._data[i] = vl
+                    if vl < sph._min[0]: sph._min[0] = vl
+                    if vl > sph._max[0]: sph._max[0] = vl
+                    continue # end of for(i)
             else:
+                val = self._curData._data[dataIdx]
+                sph._min = [val]
+                sph._max = [val]
                 for i in range(dimSz):
-                    sph._data[i] = self._curData._data[i*self._datalen +dataIdx]
+                    val  = self._curData._data[i*self._datalen + dataIdx]
+                    sph._data[i] = val
+                    if val < sph._min[0]: sph._min[0] = val
+                    if val > sph._max[0]: sph._max[0] = val
+                    continue # end of for(i)
         return sph
