@@ -3,6 +3,7 @@ import time
 
 import TSDataSPH
 from SPH_isosurf import SPH_isosurf
+from SPH_filter import SPH_filter
 
 def Loader(d):
     d.setupFiles(['uvw_010.sph', 'uvw_020.sph', 'uvw_030.sph'],
@@ -15,17 +16,16 @@ t.start()
 
 for i in range(10):
     time.sleep(0.3)
-    print(d.curStepIdx)
+    print(d.numSteps)
     if not d.is_working:
         break
-    
 t.join()
 
-d.setCurStepIdx(2)
-sph = d.getScalarSPH(TSDataSPH.TSDataSPH.VECMAG)
-print(sph._min, sph._max)
+sphV = d.getDataIdx(2)
+sphS = SPH_filter.vectorMag(sphV)
+print(sphS._min, sphS._max)
 
-v, f, n = SPH_isosurf.generate(sph, 3.3)
+v, f, n = SPH_isosurf.generate(sphS, 3.3)
 SPH_isosurf.saveOBJ('/tmp/isosurf.obj', v, f, n)
 
 print('done.')

@@ -19,8 +19,7 @@ class TSData:
         self._timeList = []
         self._fileList = []
         self._bbox = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-        self._curData = None
-        self._curIdx = 0
+        self._dataList = []
         self._datalen = 0
         self._minMaxList = []
         self._hasMinMax = False
@@ -52,14 +51,6 @@ class TSData:
         return self._bbox
 
     @property
-    def curData(self):
-        return self._curData
-
-    @property
-    def curStepIdx(self):
-        return self._curIdx
-
-    @property
     def datalen(self):
         return self._datalen
     @datalen.setter
@@ -77,6 +68,32 @@ class TSData:
     def is_working(self):
         return self._evt.is_set()
 
-    def setCurStepIdx(self, idx: int) -> bool:
-        pass
+    @property
+    def numSteps(self):
+        if self.is_ready:
+            return len(self._stepList)
+        return 0
+
+    def convStepToIdx(self, stp):
+        if not self.is_ready:
+            return -1
+        if stp < self._stepList[0]:
+            return -1
+        if stp >= self._stepList[-1]:
+            return self.numSteps - 1
+        for i in range(self.numSteps):
+            if self._stepList[i] > stp:
+                break
+        return i - 1
+    
+    def getDataIdx(self, stpIdx):
+        if not self.is_ready:
+            return None
+        if stpIdx < 0 or stpIdx >= self.numSteps:
+            return None
+        return self._dataList[stpIdx]
+
+    def getDataStp(self, stp):
+        stpIdx = self.convStepToIdx(stp)
+        return self.getDataIdx(stpIdx)
     

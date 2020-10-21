@@ -13,10 +13,10 @@ from skimage import measure
 class SPH_isosurf:
 
     @staticmethod
-    def generate(d: SPH.SPH, value: float):
+    def generate(d: SPH.SPH, value: float) -> ([], [], []):
         dimSz = d._dims[0] * d._dims[1] * d._dims[2]
         if dimSz < 8 or d._veclen != 1:
-            return None
+            return (None, None, None)
         
         vol = d._data.reshape([d._dims[2], d._dims[1], d._dims[0]])
         verts, faces, normals, values = measure.marching_cubes(vol, value)
