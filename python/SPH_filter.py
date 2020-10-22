@@ -8,6 +8,10 @@ import sys, os
 import numpy as np
 from pySPH import SPH
 
+import json
+import base64
+import _pickle as pickle
+
 class SPH_filter:
 
     @staticmethod
@@ -81,5 +85,21 @@ class SPH_filter:
             if vl < sph._min[0]: sph._min[0] = vl
             if vl > sph._max[0]: sph._max[0] = vl
             continue # end of for(i)
+        return sph
+    
+    @staticmethod
+    def toJSON(d: SPH.SPH) -> str:
+        jd = {
+            'type': 'sph',
+            'data': base64.b64encode(pickle.dumps(d)).decode('utf-8'),
+            }
+        str_data = json.dumps(jd)
+        return str_data
+
+    @staticmethod
+    def fromJSON(sd: str) -> SPH.SPH:
+        jd = json.loads(sd)
+        d = base64.b64decode(jd['data'].encode())
+        sph = pickle.loads(d)
         return sph
     
