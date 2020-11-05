@@ -14,6 +14,22 @@ class SPH_isosurf:
 
     @staticmethod
     def generate(d: SPH.SPH, value: float) -> ([], [], []):
+        ''' generate
+        スカラーのSPHデータに対して等値面を生成する(static method)
+
+        Parameters
+        ----------
+        d: SPH.SPH
+          スカラーSPHデータ
+        value: float
+          等値面の閾値
+
+        Returns
+        -------
+        float[]: 等値面の頂点リスト
+        int[]: 等値面の三角形の頂点リスト
+        float[]: 等値面の頂点の法線ベクトルリスト
+        '''
         dimSz = d._dims[0] * d._dims[1] * d._dims[2]
         if dimSz < 8 or d._veclen != 1:
             return (None, None, None)
@@ -24,7 +40,25 @@ class SPH_isosurf:
         return (verts, faces, normals)
 
     @staticmethod
-    def saveOBJ(path, verts, faces, normals):
+    def saveOBJ(path, verts, faces, normals) -> bool:
+        ''' saveOBJ
+        generateで生成された等値面をOBJファイルに出力する(static method)
+
+        Parameters
+        ----------
+        path: str
+          OBJファイルのパス
+        verts: float[]
+          等値面の頂点リスト
+        faces: int[]
+          等値面の三角形の頂点リスト
+        normals: float[]
+          等値面の頂点の法線ベクトルリスト
+
+        Returns
+        -------
+        bool: 成功=True、失敗=False
+        '''
         try:
             with open(path, 'w') as f:
                 f.write('o SPH_isosurf\n')
