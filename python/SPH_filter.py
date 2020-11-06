@@ -116,18 +116,18 @@ class SPH_filter:
         ''' divideShareEdge
         SPHデータについて、隣接格子点を共有した分割を行う(static method)
         格子サイズが5の次元を2分割する場合、分割されたデータの格子サイズは(3, 3)になる.
-        分割されたデータの格子サイズは2以上にならなければならない.
+        分割されたデータの格子サイズは1以上でならなければならない.
 
         Parameters
         ----------
         d: SPH.SPH
           分割するSPHデータ
-        div: int[]
+        div: int[3]
           各軸方向の分割数(>0)
 
         Returns
         -------
-        SPH.SPH[]: 分割されたSPHデータのリスト、空のリスト: 失敗
+        SPH.SPH[]: 分割されたSPHデータのリスト、空のリスト=失敗
         '''
         sb_lst = []
         if d._veclen < 1:
@@ -135,10 +135,10 @@ class SPH_filter:
         if div[0] < 1 or div[1] < 1 or div[2] < 1:
             return sb_lst
         sbDim = [int(d._dims[i] / div[i]) + (1 if div[i] != 1 else 0) for i in range(3)]
-        if sbDim[0] < 2 or sbDim[1] < 2 or sbDim[2] < 2:
+        if sbDim[0] < 1 or sbDim[1] < 1 or sbDim[2] < 1:
             return sb_lst
         sbDimE = [d._dims[i] - (sbDim[i] -1) * (div[i] - 1) for i in range(3)]
-        if sbDimE[0] < 2 or sbDimE[1] < 2 or sbDimE[2] < 2:
+        if sbDimE[0] < 1 or sbDimE[1] < 1 or sbDimE[2] < 1:
             return sb_lst
 
         newOrg = list(d._org)
