@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-TSDataSPH
+TSDataSPH time-series data with SPH file
 """
 
 import os, sys
