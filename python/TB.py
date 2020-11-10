@@ -4,7 +4,6 @@
 Temporal Buffer prototype
 """
 __author__ = "Yoshikawa, Hiroyuki <yoh@fujitsu.com>"
-__status__ = "prototype"
 __version__ = "0.1.0"
 
 import sys, os
@@ -36,7 +35,7 @@ class TB(object):
             {"file": "ファイル名1", "step": "タイムステップ番号", "time": "時刻"},
             ...
           ]
-        ]
+        }
         タイムステップ番号と時刻はオプションで、省略された場合SPHファイルに格納されて
         いるタイムステップ番号、時刻が採用されます。
 
@@ -130,13 +129,12 @@ class TB(object):
             return False
         return True
 
+
 def usage(prog:str ='TB'):
     print('usage: {} [-j input.json | -l file0.sph file1.sph ...]'\
           .format(prog))
     return
 
-def loader(tb, jfn):
-    tb.loadFromJSON(jfn)
     
 if __name__ == '__main__':
     import threading
@@ -145,7 +143,7 @@ if __name__ == '__main__':
     tbApp = TB()
     ret = False
     if len(sys.argv) > 1:
-        tbt = threading.Thread(target=loader, args=([tbApp, sys.argv[1]]))
+        tbt = threading.Thread(target=tbApp.loadFromJSON, args=([sys.argv[1]]))
         tbt.setDaemon(True)
         tbt.start()
 
