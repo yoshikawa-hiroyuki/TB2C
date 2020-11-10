@@ -15,16 +15,43 @@ import json
 from collections import OrderedDict
 
 
-class TB:
+class TB(object):
+    ''' TB
+    Temporal Bufferのプロトタイプ実装クラスです。
+    JSONまたはファイルリストで指定された時系列SPHデータを読み込み、保持します。
+    また、要求されたタイムスライスのデータをエンコードして送信します。
+    '''
     def __init__(self) -> None:
         self._tsdata = TSDataSPH()
         self._lastErr = None
         return
 
     def loadFromJSON(self, json_path: str) -> bool:
+        ''' loadFromJSON
+        JSONファイルから時系列SPHデータを読み込みます。
+        JSONファイルは、以下の形式であることを想定しています。
+        {
+          "basedir": "SPHファイルが存在するディレクトリ(省略時は'.')"
+          "filelist": [
+            {"file": "ファイル名1", "step": "タイムステップ番号", "time": "時刻"},
+            ...
+          ]
+        ]
+        タイムステップ番号と時刻はオプションで、省略された場合SPHファイルに格納されて
+        いるタイムステップ番号、時刻が採用されます。
+
+        Parameters
+        ----------
+        json_path: str
+          JSONファイルのパス
+        
+        Returns
+        -------
+        bool: True=成功、false=失敗
+        '''
         # open and read JSON file
         try:
-            with open('data/src/test.json') as f:
+            with open(json_path) as f:
                 jf = json.load(f, object_pairs_hook=OrderedDict)
         except FileNotFoundError as e:
             self._lastErr = str(e)
@@ -44,7 +71,7 @@ class TB:
         file_lst = []
         step_lst = []
         time_lst = []
-        for o in jf:
+        for o in flist:
             okeys = o.keys()
             if not 'file' in okeys:
                 continue
@@ -83,6 +110,20 @@ class TB:
         return True
 
     def loadFromFilelist(self, fnlist: [], basedir: str ='.') -> bool:
+        ''' loadFromFilelist
+        SPHファイルのリストを時系列データとして読み込みます。
+
+        Parameters
+        ----------
+        fnlist: str[]
+          SPHファイルのパスのリスト
+        basedir: str
+          SPHファイルが存在するディレクトリ(省略時は'.')
+
+        Returns
+        -------
+        bool: True=成功、false=失敗
+        '''
         # load SPH files
         if not self._tsdata.setupFiles(fnlist, basedir):
             self._lastErr = 'load SPH file failed'
@@ -90,11 +131,34 @@ class TB:
         return True
 
 def usage(prog:str ='TB'):
-    print('usage: {} [-j input.json | -l infile0.sph infile1.sph ...]'\
+    print('usage: {} [-j input.json | -l file0.sph file1.sph ...]'\
           .format(prog))
     return
+
+def loader(tb, jfn):
+    tb.loadFromJSON(jfn)
     
 if __name__ == '__main__':
-    usage()
-    sys.exit(0)
+    import threading
+    import time
+
+    tbApp = TB()
+    ret = False
+    if len(sys.argv) > 1:
+        tbt = threading.Thread(target=loader, args=([tbApp, sys.argv[1]]))
+        tbt.setDaemon(True)
+        tbt.start()
+
+        while True:
+            print('loading: {} steps done'.format(tbApp._tsdata.numSteps))
+            time.sleep(0.5)
+            if not tbApp._tsdata.is_working:
+                break
+        tbt.join()
+
+        if tbApp._tsdata.is_ready:
+            ret = True
+
+    print('loaded {} steps.'.format(tbApp._tsdata.numSteps))
+    sys.exit(0 if ret == True else 1)
     
