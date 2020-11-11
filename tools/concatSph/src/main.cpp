@@ -8,17 +8,35 @@ using namespace CES;
 
 int main(int argc, char** argv) {
   string dfipath;
-  if ( argc > 1 )
+  if ( argc > 1 ) {
     dfipath = string(argv[1]);
-  else {
+  } else {
     fprintf(stderr, "usage: %s infile.dfi\n", argv[0]);
     exit(1);
   }
 
   Data_Dfi dfi;
-  dfi.init(dfipath);
+  if ( ! dfi.init(dfipath) ) {
+    fprintf(stderr, "%s: read failed: %s\n", argv[0], dfipath.c_str());
+    exit(1);
+  }
 
   Data_DfiSv dfiSv;
-  dfiSv.init(&dfi);
+  if ( ! dfiSv.init(&dfi) ) {
+    fprintf(stderr, "%s: parse failed: %s\n",
+	    argv[0], dfipath.c_str());
+    exit(1);
+  }
 
+  for ( size_t stp = 0; stp < dfiSv.m_numStps; stp++ ) {
+    if ( ! dfiSv.setCurrentStepIdx(stp) ) {
+      fprintf(stderr, "%s: read SPHs failed: step=%lu\n",
+	      argv[0], stp);
+      exit(1);
+    }
+    printf("step=%lu read.\n", stp);
+
+    // write
+  }
+  
 }

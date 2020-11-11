@@ -31,7 +31,7 @@ public:
     bool operator<(const StpUnit& x) {return (step < x.step);}
   };
 
-protected:
+  //protected:
   class Data_Dfi*     p_refDataDfi;
   CES::Vec3<size_t>   m_regionIdx[2];
   float*              m_pData;

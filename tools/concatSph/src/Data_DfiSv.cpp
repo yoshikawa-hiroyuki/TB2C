@@ -68,7 +68,6 @@ bool Data_DfiSv::init(Data_Dfi* pddfi, const Vec3<size_t>* regionIdx) {
   } // end of for(i)
   m_dims = en_max;
 
-  if ( ! setCurrentStepIdx(0) ) return false;
   return true;
 }
 
