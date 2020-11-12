@@ -9,7 +9,7 @@ using namespace CES;
 /* constructors / destructor */
 
 Data_DfiSv::Data_DfiSv()
-  : p_refDataDfi(NULL), m_pData(NULL), m_dataLen(0)
+  : p_refDataDfi(NULL), m_pData(NULL), m_dataLen(0), m_currentStepIdx(0)
 {
 }
 
@@ -30,7 +30,8 @@ bool Data_DfiSv::init(Data_Dfi* pddfi, const Vec3<size_t>* regionIdx) {
   if ( regionIdx ) {
     if ( regionIdx[0][0] >= gDiv[0] || regionIdx[1][0] >= gDiv[0] ||
 	 regionIdx[0][1] >= gDiv[1] || regionIdx[1][1] >= gDiv[1] ||
-	 regionIdx[0][2] >= gDiv[2] || regionIdx[1][2] >= gDiv[2] ) return false;
+	 regionIdx[0][2] >= gDiv[2] || regionIdx[1][2] >= gDiv[2] )
+      return false;
     if ( regionIdx[0][0] > regionIdx[1][0] ||
 	 regionIdx[0][1] > regionIdx[1][1] ||
 	 regionIdx[0][2] > regionIdx[1][2] ) return false;
@@ -145,6 +146,63 @@ bool Data_DfiSv::setCurrentStepIdx(const size_t stpIdx) {
     delete [] pfDat;
   }
 
+  m_currentStepIdx = stpIdx;
+  return true;
+}
+
+bool Data_DfiSv::saveSphFile(const string& path) const {
+  if ( path.length() < 1 ) return false;
+  if ( m_dataLen != 1 && m_dataLen != 3 ) return false;
+  size_t dSz = m_dims[0] * m_dims[1] * m_dims[2] * m_dataLen;
+  if ( dSz < 1 ) return false;
+  if ( ! p_refDataDfi || ! m_pData ) return false;
+
+  int iwk[5];
+  float* fwk = (float*)iwk;
+  
+  // open file
+  FILE* fp = fopen(path.c_str(), "wb");
+  if ( ! fp ) return false;
+
+  // write header
+  iwk[0] = iwk[3] = 8;
+  iwk[1] = (m_dataLen == 1 ? 1 : 2);
+  iwk[2] = 1;
+  fwrite(iwk, 4, 4, fp);
+
+  // write dims
+  iwk[0] = iwk[4] = 12;
+  iwk[1] = (int)m_dims[0];
+  iwk[2] = (int)m_dims[1];
+  iwk[3] = (int)m_dims[2];
+  fwrite(iwk, 4, 5, fp);
+
+  // write orig
+  fwk[1] = p_refDataDfi->m_globalOrig[0];
+  fwk[2] = p_refDataDfi->m_globalOrig[1];
+  fwk[3] = p_refDataDfi->m_globalOrig[2];
+  fwrite(iwk, 4, 5, fp);
+
+  // write pitch
+  Vec3<float> pit = p_refDataDfi->getPitch();
+  fwk[1] = pit[0];
+  fwk[2] = pit[1];
+  fwk[3] = pit[2];
+  fwrite(iwk, 4, 5, fp);
+
+  // write time
+  iwk[0] = iwk[3] = 8;
+  iwk[1] = m_stpList[m_currentStepIdx].step;
+  fwk[2] = m_stpList[m_currentStepIdx].time;
+  fwrite(iwk, 4, 4, fp);
+
+  // write data
+  iwk[0] = (int)dSz * 4;
+  fwrite(iwk, 4, 1, fp);
+  fwrite(m_pData, 4, dSz, fp);
+  fwrite(iwk, 4, 1, fp);
+
+  fclose(fp);
   return true;
 }
 

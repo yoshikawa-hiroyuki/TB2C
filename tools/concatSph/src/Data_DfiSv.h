@@ -20,6 +20,7 @@ public:
   class Data_Dfi* getRefDataDfi() {return p_refDataDfi;}
   const CES::Vec3<size_t>* getRegionIdx() const {return m_regionIdx;}
   bool setCurrentStepIdx(const size_t stpIdx);
+  bool saveSphFile(const std::string& path) const;
 
   struct StpUnit {
     int   step;
@@ -39,7 +40,8 @@ public:
   std::deque<StpUnit> m_stpList; // [m_numSteps]
   CES::Vec3<size_t>   m_dims;
   size_t              m_dataLen;
-
+  size_t              m_currentStepIdx;
+  
   static bool ReadinSph(const std::string& path, float* pd, const size_t gc=0);
 };
 
