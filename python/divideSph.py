@@ -32,7 +32,7 @@ def divide(sph: SPH.SPH, div: [], outbase: str) -> bool:
     
 if __name__ == '__main__':
     if len(sys.argv) < 6:
-        printf('usage: %s infile.sph outfile_%I_%J_%K.sph I J K')
+        print('usage: {} infile.sph outfile_%I_%J_%K.sph I J K'.format(sys.argv[0]))
         sys.exit(1)
         
     org_sph = SPH.SPH()
