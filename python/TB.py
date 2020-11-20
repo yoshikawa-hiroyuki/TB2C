@@ -13,16 +13,18 @@ from TSDataSPH import TSDataSPH
 import json
 from collections import OrderedDict
 
-
 class TB(object):
-    ''' TB
+    ''' TB - Temporal Buffer
     Temporal Bufferのプロトタイプ実装クラスです。
     JSONまたはファイルリストで指定された時系列SPHデータを読み込み、保持します。
     また、要求されたタイムスライスのデータをエンコードして送信します。
     '''
+    __seq = 1
+    
     def __init__(self) -> None:
         self._tsdata = TSDataSPH()
         self._lastErr = None
+        self._id = TB.__seq; TB.__seq += 1
         return
 
     def loadFromJSON(self, json_path: str) -> bool:
@@ -129,9 +131,93 @@ class TB(object):
             return False
         return True
 
+    
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+from urllib.parse import parse_qs, urlparse
+from SPH_filter import SPH_filter
+
+g_tb = None
+
+class TBReqHandler(SimpleHTTPRequestHandler):
+    ''' TBReqHandler
+    Temporal Buffer用のHTTPリクエストハンドラー実装クラスです。
+    '''    
+    def do_GET(self):
+        _cwd = os.getcwd()
+        parsed_path = urlparse(self.path)
+        if parsed_path.path == '/':
+            # メタデータ要求 --- メタデータを返す
+            metad = {}
+            metad['id'] = g_tb._id
+            first_path = g_tb._tsdata._fileList[0]
+            if first_path.startswith(_cwd):
+                first_path = first_path.replace(_cwd, '')
+            metad['uri'] = 'file:/' + first_path
+            metad['type'] = 'SPH'
+            metad['dims'] = g_tb._tsdata._dims
+            metad['datalen'] = g_tb._tsdata._datalen
+            metad['bbox'] = g_tb._tsdata._bbox
+            metad['steps'] = len(g_tb._tsdata._stepList)
+            metad['timerange'] = [g_tb._tsdata._timeList[0],
+                                  g_tb._tsdata._timeList[-1]]
+            
+        elif parsed_path.path == '/data':
+            # データ要求 --- 指定されたstepのデータを返す
+            qs = parse_qs(parsed_path.query)
+            try:
+                step = int(qs['step'][0])
+                did = int(qs['id'][0])
+            except:
+                msg = 'no id nor step specified.'
+                self.send_response(412)
+                self.send_header('Content-Type', 'text/plain')
+                self.send_header('Content-length', len(msg))
+                self.end_headers()
+                body = bytes(msg, 'utf-8')
+                self.wfile.write(body)
+                return
+            if did != g_tb._id or \
+               step < 0 or step >= len(g_tb._tsdata._stepList):
+                if did != g_tb._id:
+                    msg = 'invalid id specified: {}.'.format(did)
+                else:
+                    msg = 'invalid step specified: {}.'.format(step)
+                self.send_response(412)
+                self.send_header('Content-Type', 'text/plain')
+                self.send_header('Content-length', len(msg))
+                self.end_headers()
+                body = bytes(msg, 'utf-8')
+                self.wfile.write(body)
+                return
+            
+            metad = {}
+            metad['type'] = 'SPH'
+            metad['step'] = step
+            sph = g_tb._tsdata.getDataIdx(step)
+            if sph == None:
+                msg = 'can not get data of step {}.'.format(step)
+                self.send_response(404)
+                self.send_header('Content-Type', 'text/plain')
+                self.send_header('Content-length', len(msg))
+                self.end_headers()
+                body = bytes(msg, 'utf-8')
+                self.wfile.write(body)
+                return
+            metad['data'] = SPH_filter.toJSON(sph)
+            
+        meta_str = json.dumps(metad)
+        body = bytes(meta_str, 'utf-8')
+
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-length', len(body))
+        self.end_headers()
+        self.wfile.write(body)
+        return
+    
 
 def usage(prog:str ='TB'):
-    print('usage: {} [-j input.json | -l file0.sph file1.sph ...]'\
+    print('usage: {} [-p port] [-j input.json | -l file0.sph file1.sph ...]'\
           .format(prog))
     return
 
@@ -139,24 +225,46 @@ def usage(prog:str ='TB'):
 if __name__ == '__main__':
     import threading
     import time
+    import argparse
+    prog = 'TB'
 
-    tbApp = TB()
-    ret = False
-    if len(sys.argv) > 1:
-        tbt = threading.Thread(target=tbApp.loadFromJSON, args=([sys.argv[1]]))
-        tbt.setDaemon(True)
-        tbt.start()
+    # parse argv
+    parser = argparse.ArgumentParser(description='Temporal Buffer prototype')
+    parser.add_argument('-p', help='port number', type=int, default='4000')
+    parser.add_argument('-j', help='path of input.json')
+    parser.add_argument('-l', help='pathes of input sph files', nargs='*')
+    args = parser.parse_args()
+    if args.j == None and args.l == None:
+        print('{}: no input.json nor sph files specified.'.format(prog))
+        usage(prog)
+        sys.exit(1)
 
-        while True:
-            print('loading: {} steps done'.format(tbApp._tsdata.numSteps))
-            time.sleep(0.5)
-            if not tbApp._tsdata.is_working:
-                break
-        tbt.join()
+    # prepare Temporal Buffer
+    g_tb = TB()
+    if args.j != None:
+        tbt = threading.Thread(target=g_tb.loadFromJSON, args=([args.j]))
+    else:
+        tbt = threading.Thread(target=g_tb.loadFromFilelist, args=([args.l]))
+    tbt.setDaemon(True)
+    tbt.start()
 
-        if tbApp._tsdata.is_ready:
-            ret = True
+    while True:
+        sys.stdout.write('loading: {} steps done\r'.format(g_tb._tsdata.numSteps))
+        time.sleep(0.5)
+        if not g_tb._tsdata.is_working:
+            break
+    tbt.join()
+    if g_tb._tsdata.is_ready:
+        print('\n{}: loaded {} steps.'.format(prog, g_tb._tsdata.numSteps))
+    else:
+        print('{}: load failed: {}'.format(prog, g_tb._lastErr))
+        sys.exit(1)
+    
+    # prepare HTTP server
+    host = '0.0.0.0'
+    port = args.p
+    httpd = HTTPServer((host, port), TBReqHandler)
+    httpd.serve_forever()
 
-    print('loaded {} steps.'.format(tbApp._tsdata.numSteps))
-    sys.exit(0 if ret == True else 1)
+    sys.exit(0)
     
