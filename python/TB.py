@@ -204,6 +204,15 @@ class TBReqHandler(SimpleHTTPRequestHandler):
                 self.wfile.write(body)
                 return
             metad['data'] = SPH_filter.toJSON(sph)
+        else:
+            msg = 'invalid URL specified.'
+            self.send_response(404)
+            self.send_header('Content-Type', 'text/plain')
+            self.send_header('Content-length', len(msg))
+            self.end_headers()
+            body = bytes(msg, 'utf-8')
+            self.wfile.write(body)
+            return
             
         meta_str = json.dumps(metad)
         body = bytes(meta_str, 'utf-8')
@@ -249,7 +258,8 @@ if __name__ == '__main__':
     tbt.start()
 
     while True:
-        sys.stdout.write('loading: {} steps done\r'.format(g_tb._tsdata.numSteps))
+        sys.stdout.write('loading: {} steps done\r'\
+                         .format(g_tb._tsdata.numSteps))
         time.sleep(0.5)
         if not g_tb._tsdata.is_working:
             break
@@ -264,6 +274,7 @@ if __name__ == '__main__':
     host = '0.0.0.0'
     port = args.p
     httpd = HTTPServer((host, port), TBReqHandler)
+    print('{}: serving via http://{}:{}/'.format(prog, host, port))
     httpd.serve_forever()
 
     sys.exit(0)
