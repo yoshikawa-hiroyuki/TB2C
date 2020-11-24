@@ -22,6 +22,7 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
     '''    
     def do_GET(self):
         parsed_path = urlparse(self.path)
+
         if parsed_path.path == '/':
             # メタデータ要求 --- 図種('vistype')を追加したメタデータを返す
             if not g_meta_dic:
@@ -30,8 +31,7 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'text/plain')
                 self.send_header('Content-length', len(msg))
                 self.end_headers()
-                body = bytes(msg, 'utf-8')
-                self.wfile.write(body)
+                self.wfile.write(bytes(msg, 'utf-8'))
                 return
             meta_str = json.dumps(g_meta_dic)
             body = bytes(meta_str, 'utf-8')
@@ -42,25 +42,35 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
             self.wfile.write(body)
             return
 
+        elif parsed_path.path == '/quit':
+            # 停止要求
+            msg = 'ok'
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/plain')
+            self.send_header('Content-length', len(msg))
+            self.end_headers()
+            self.wfile.write(bytes(msg, 'utf-8'))
+            sys.exit(0)
+
         msg = 'invalid URL specified.'
         self.send_response(404)
         self.send_header('Content-Type', 'text/plain')
         self.send_header('Content-length', len(msg))
         self.end_headers()
-        body = bytes(msg, 'utf-8')
-        self.wfile.write(body)
+        self.wfile.write(bytes(msg, 'utf-8'))
         return
 
     def do_POST(self):
         content_length = int(self.headers['content-length'])
         parsed_path = urlparse(self.path)
-        if parsed_path.path == '/visualize':
+
+        if parsed_path.path in ('/visualize', '/visualize/'):
             # 図種生成要求 --- 指定されたstepの可視化図種を生成する
             req_body = self.rfile.read(content_length).decode('utf-8')
             req_dic = json.loads(req_body)
             try:
-                step = int(req_dic['step'][0])
-                vistype = req_dic['vistype'][0]
+                step = int(req_dic['step'])
+                vistype = req_dic['vistype']
                 visparam = req_dic['visparam']
             except:
                 msg = 'lack of required param.'
@@ -68,20 +78,27 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'text/plain')
                 self.send_header('Content-length', len(msg))
                 self.end_headers()
-                body = bytes(msg, 'utf-8')
-                self.wfile.write(body)
+                self.wfile.write(bytes(msg, 'utf-8'))
+                return
+            if vistype != 'isosurf':
+                msg = 'vistype not supported: {}'.format(vistype)
+                self.send_response(412)
+                self.send_header('Content-Type', 'text/plain')
+                self.send_header('Content-length', len(msg))
+                self.end_headers()
+                self.wfile.write(bytes(msg, 'utf-8'))
                 return
 
             # get data of step, and visualize
-
+            
+            
         else:
             msg = 'invalid URL specified.'
             self.send_response(404)
             self.send_header('Content-Type', 'text/plain')
             self.send_header('Content-length', len(msg))
             self.end_headers()
-            body = bytes(msg, 'utf-8')
-            self.wfile.write(body)
+            self.wfile.write(bytes(msg, 'utf-8'))
             return
 
         msg = 'ok'
@@ -89,8 +106,7 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
         self.send_header('Content-Type', 'text/plain')
         self.send_header('Content-length', len(msg))
         self.end_headers()
-        body = bytes(msg, 'utf-8')
-        self.wfile.write(body)
+        self.wfile.write(bytes(msg, 'utf-8'))
         return
 
     
@@ -131,17 +147,32 @@ if __name__ == '__main__':
 
     # parse argv
     parser = argparse.ArgumentParser(description='TB2C server')
-    parser.add_argument('-p', help='port number', type=int, default='4001')
+    parser.add_argument('-p', help='port number', type=int, default='4000')
     parser.add_argument('-t', help='URL of TB to connect', type=str,
-                        default='http://localhost:4000/')
+                        default='http://localhost:4001/')
     parser.add_argument('-d', help='output dir for tileset.json', type=str,
                         default='.')
     args = parser.parse_args()
 
     # get metadata from TB
-    g_meta_dic = getMetadata(args.t)
-    print(meta_dic)
+    try:
+        g_meta_dic = getMetadata(args.t)
+    except Exception as e:
+        print('{}: get metadata failed: {}'.format(prog, str(e)))
+        sys.exit(1)
 
-    sph = getSPHdata(args.t, meta_dic['id'], 30)
-    print(sph)
+    # invoke HTTP server
+    host = '0.0.0.0'
+    port = args.p
+    try:
+        httpd = HTTPServer((host, port), TB2C_server_ReqHandler)
+    except Exception as e:
+        print('{}: invoke httpd failed: {}'.format(prog, str(e)))
+        sys.exit(1)
+    print('{}: serving started at port#{}'.format(prog, port))
+    httpd.serve_forever()
+
+    sys.exit(0)
+    #sph = getSPHdata(args.t, g_meta_dic['id'], 30)
+    #print(sph)
     

@@ -161,7 +161,7 @@ class TBReqHandler(SimpleHTTPRequestHandler):
             metad['timerange'] = [g_tb._tsdata._timeList[0],
                                   g_tb._tsdata._timeList[-1]]
             
-        elif parsed_path.path == '/data':
+        elif parsed_path.path in ('/data', '/data/'):
             # データ要求 --- 指定されたstepのデータを返す
             qs = parse_qs(parsed_path.query)
             try:
@@ -173,8 +173,7 @@ class TBReqHandler(SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'text/plain')
                 self.send_header('Content-length', len(msg))
                 self.end_headers()
-                body = bytes(msg, 'utf-8')
-                self.wfile.write(body)
+                self.wfile.write(bytes(msg, 'utf-8'))
                 return
             if did != g_tb._id or \
                step < 0 or step >= len(g_tb._tsdata._stepList):
@@ -186,8 +185,7 @@ class TBReqHandler(SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'text/plain')
                 self.send_header('Content-length', len(msg))
                 self.end_headers()
-                body = bytes(msg, 'utf-8')
-                self.wfile.write(body)
+                self.wfile.write(bytes(msg, 'utf-8'))
                 return
             
             metad = {}
@@ -200,23 +198,32 @@ class TBReqHandler(SimpleHTTPRequestHandler):
                 self.send_header('Content-Type', 'text/plain')
                 self.send_header('Content-length', len(msg))
                 self.end_headers()
-                body = bytes(msg, 'utf-8')
-                self.wfile.write(body)
+                self.wfile.write(bytes(msg, 'utf-8'))
                 return
             metad['data'] = SPH_filter.toJSON(sph)
+
+        elif parsed_path.path == '/quit':
+            # 停止要求
+            msg = 'ok'.format(prog)
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/plain')
+            self.send_header('Content-length', len(msg))
+            self.end_headers()
+            self.wfile.write(bytes(msg, 'utf-8'))
+            sys.exit(0)
+
         else:
             msg = 'invalid URL specified.'
             self.send_response(404)
             self.send_header('Content-Type', 'text/plain')
             self.send_header('Content-length', len(msg))
             self.end_headers()
-            body = bytes(msg, 'utf-8')
-            self.wfile.write(body)
+            self.wfile.write(bytes(msg, 'utf-8'))
             return
             
         meta_str = json.dumps(metad)
         body = bytes(meta_str, 'utf-8')
-
+        
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Content-length', len(body))
@@ -239,7 +246,7 @@ if __name__ == '__main__':
 
     # parse argv
     parser = argparse.ArgumentParser(description='Temporal Buffer prototype')
-    parser.add_argument('-p', help='port number', type=int, default='4000')
+    parser.add_argument('-p', help='port number', type=int, default='4001')
     parser.add_argument('-j', help='path of input.json')
     parser.add_argument('-l', help='pathes of input sph files', nargs='*')
     args = parser.parse_args()
@@ -270,11 +277,15 @@ if __name__ == '__main__':
         print('{}: load failed: {}'.format(prog, g_tb._lastErr))
         sys.exit(1)
     
-    # prepare HTTP server
+    # invoke HTTP server
     host = '0.0.0.0'
     port = args.p
-    httpd = HTTPServer((host, port), TBReqHandler)
-    print('{}: serving via http://{}:{}/'.format(prog, host, port))
+    try:
+        httpd = HTTPServer((host, port), TBReqHandler)
+    except Exception as e:
+        print('{}: invoke httpd failed: {}'.format(prog, str(e)))
+        sys.exit(1)
+    print('{}: serving started at port#{}'.format(prog, port))
     httpd.serve_forever()
 
     sys.exit(0)
