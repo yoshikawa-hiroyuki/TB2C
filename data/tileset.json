@@ -1,0 +1,157 @@
+{
+    "asset": {
+	"version": "0.0",
+	"tilesetVersion": "1.0.0-obj23dtiles",
+	"gltfUpAxis": "Z"
+    },
+    "geometricError": 500,
+    "root": {
+	"transform": [
+	  10, 0, 0, 0,
+          0, 10, 0, 0,
+          0, 0, 10, 0,
+          6378137.0,
+          -400.0,
+          0.0,
+          1
+	],
+	"boundingVolume": {
+	    "box": [
+		40, 40, 10,
+		40, 0, 0,
+		0, 40, 0,
+		0, 0, 10
+	    ]
+	},
+	"geometricError": 1,
+	"refine": "ADD",
+	"children": [
+	    {
+		"boundingVolume": {
+		    "box": [
+			13, 13, 10,
+			13, 0, 0,
+			0, 13, 0,
+			0, 0, 10
+		    ]
+		},
+		"geometricError": 0,
+		"content": {
+		    "uri": "b3dm/duvw_000_000.b3dm"
+		}
+	    },
+	    {
+		"boundingVolume": {
+		    "box": [
+			26, 13, 10,
+			13, 0, 0,
+			0, 13, 0,
+			0, 0, 10
+		    ]
+		},
+		"geometricError": 0,
+		"content": {
+		    "uri": "b3dm/duvw_001_000.b3dm"
+		}
+	    },
+	    {
+		"boundingVolume": {
+		    "box": [
+			39, 13, 10,
+			13, 0, 0,
+			0, 13, 0,
+			0, 0, 10
+		    ]
+		},
+		"geometricError": 0,
+		"content": {
+		    "uri": "b3dm/duvw_002_000.b3dm"
+		}
+	    },
+	    {
+		"boundingVolume": {
+		    "box": [
+			13, 26, 10,
+			13, 0, 0,
+			0, 13, 0,
+			0, 0, 10
+		    ]
+		},
+		"geometricError": 0,
+		"content": {
+		    "uri": "b3dm/duvw_000_001.b3dm"
+		}
+	    },
+	    {
+		"boundingVolume": {
+		    "box": [
+			26, 26, 10,
+			13, 0, 0,
+			0, 13, 0,
+			0, 0, 10
+		    ]
+		},
+		"geometricError": 0,
+		"content": {
+		    "uri": "b3dm/duvw_001_001.b3dm"
+		}
+	    },
+	    {
+		"boundingVolume": {
+		    "box": [
+			39, 26, 10,
+			13, 0, 0,
+			0, 13, 0,
+			0, 0, 10
+		    ]
+		},
+		"geometricError": 0,
+		"content": {
+		    "uri": "b3dm/duvw_002_001.b3dm"
+		}
+	    },
+	    {
+		"boundingVolume": {
+		    "box": [
+			13, 39, 10,
+			13, 0, 0,
+			0, 13, 0,
+			0, 0, 10
+		    ]
+		},
+		"geometricError": 0,
+		"content": {
+		    "uri": "b3dm/duvw_000_002.b3dm"
+		}
+	    },
+	    {
+		"boundingVolume": {
+		    "box": [
+			26, 39, 10,
+			13, 0, 0,
+			0, 13, 0,
+			0, 0, 10
+		    ]
+		},
+		"geometricError": 0,
+		"content": {
+		    "uri": "b3dm/duvw_001_002.b3dm"
+		}
+	    },
+	    {
+		"boundingVolume": {
+		    "box": [
+			39, 39, 10,
+			13, 0, 0,
+			0, 13, 0,
+			0, 0, 10
+		    ]
+		},
+		"geometricError": 0,
+		"content": {
+		    "uri": "b3dm/duvw_002_002.b3dm"
+		}
+	    }
+	]
+    }
+}

@@ -10,17 +10,78 @@ from SPH_filter import SPH_filter
 import json
 import urllib.request
 
-
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
 g_meta_dic = None
+g_tb_uri = None
+
+def getMetadata(uri:str) -> {}:
+    ''' getMetadata
+    URIで指定されたデータソースよりメタデータを読み込み、'vistype'を付加して返す
+
+    Parameters
+    ----------
+    uri: str
+      データソースのURI
+
+    Returns
+    -------
+    {}: メタデータ
+    '''
+    with urllib.request.urlopen(uri) as response:
+        res_bin = response.read()
+       
+    res_str = res_bin.decode()
+    res_dic = json.loads(res_str)
+    res_dic['vistype'] = ['isosurf']
+    return res_dic
+
+
+def getSPHdata(uri:str, id:int, stp:int) -> SPH.SPH:
+    ''' getSPHdata
+    URIで指定されたデータソースより、idとstepを指定してSPHデータを取得する
+    実際にアクセスするURLは'{uri}/data?id={id}&step={stp}'
+
+    Parameters
+    ----------
+    uri: str
+      データソースのURI
+    id: int
+      取得するSPHデータのID
+    step: int
+      取得するSPHデータのタイムステップインデックス番号
+
+    Returns
+    -------
+    SPH.SPH: 取得したデータ
+    '''
+    xuri = uri
+    if xuri.endswith('/'):
+        xuri += 'data'
+    else:
+        xuri += '/data'
+    xuri += '?id={}'.format(id)
+    xuri += '&step={}'.format(stp)
+    with urllib.request.urlopen(xuri) as response:
+        res_bin = response.read()
+    res_str = res_bin.decode()
+    res_dic = json.loads(res_str)
+    sph = SPH_filter.fromJSON(res_dic['data'])
+    return sph
+
 
 class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
     ''' TB2C_server_ReqHandler
     TB2C server用のHTTPリクエストハンドラー実装クラスです。
-    '''    
+    '''
+    
     def do_GET(self):
+        ''' do_GET
+        GETメソッド用のリクエストハンドラー
+        要求されたパスが'/'の場合はメタデータを返し、'/quit'の場合は終了する。
+        '''
+        global g_meta_dic, g_tb_uri
         parsed_path = urlparse(self.path)
 
         if parsed_path.path == '/':
@@ -43,8 +104,18 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
             return
 
         elif parsed_path.path == '/quit':
-            # 停止要求
+            # 停止要求 --- TBを停止させ、自分も終了する
             msg = 'ok'
+            if g_tb_uri:
+                xuri = g_tb_uri
+                if xuri.endswith('/'):
+                    xuri += 'quit'
+                else:
+                    xuri += '/quit'
+                with urllib.request.urlopen(xuri) as response:
+                    res_bin = response.read()
+                if res_bin.decode() != 'ok':
+                    msg += ' (TB not stopped)'
             self.send_response(200)
             self.send_header('Content-Type', 'text/plain')
             self.send_header('Content-length', len(msg))
@@ -61,6 +132,11 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
         return
 
     def do_POST(self):
+        ''' do_POST
+        POSTメソッド用のリクエストハンドラー
+        要求されたパスが'/'の場合はメタデータを返し、'/quit'の場合は終了する。
+        '''
+        global g_meta_dic, g_tb_uri
         content_length = int(self.headers['content-length'])
         parsed_path = urlparse(self.path)
 
@@ -80,7 +156,7 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(bytes(msg, 'utf-8'))
                 return
-            if vistype != 'isosurf':
+            if not vistype in {'isosurf'}:
                 msg = 'vistype not supported: {}'.format(vistype)
                 self.send_response(412)
                 self.send_header('Content-Type', 'text/plain')
@@ -90,6 +166,7 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
                 return
 
             # get data of step, and visualize
+            #sph = getSPHdata(args.t, g_meta_dic['id'], step)
             
             
         else:
@@ -108,32 +185,6 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(bytes(msg, 'utf-8'))
         return
-
-    
-def getMetadata(uri:str) -> {}:
-    with urllib.request.urlopen(uri) as response:
-        res_bin = response.read()
-       
-    res_str = res_bin.decode()
-    res_dic = json.loads(res_str)
-    res_dic['vistype'] = ['isosurf']
-    return res_dic
-
-
-def getSPHdata(uri:str, id:int, stp:int) -> SPH.SPH:
-    xuri = uri
-    if xuri.endswith('/'):
-        xuri += 'data'
-    else:
-        xuri += '/data'
-    xuri += '?id={}'.format(id)
-    xuri += '&step={}'.format(stp)
-    with urllib.request.urlopen(xuri) as response:
-        res_bin = response.read()
-    res_str = res_bin.decode()
-    res_dic = json.loads(res_str)
-    sph = SPH_filter.fromJSON(res_dic['data'])
-    return sph
 
 
 def usage(prog:str ='TB2C_server'):
@@ -160,6 +211,7 @@ if __name__ == '__main__':
     except Exception as e:
         print('{}: get metadata failed: {}'.format(prog, str(e)))
         sys.exit(1)
+    g_tb_uri = args.t
 
     # invoke HTTP server
     host = '0.0.0.0'
