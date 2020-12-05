@@ -13,80 +13,91 @@ import urllib.request
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
-g_meta_dic = None
-g_tb_uri = None
+#-----------------------------------------------------------------------------
+class TB2C_server:
+    def __init__(self):
+        self._meta_dic = None
+        self._tb_uri = None
+        return
+    
+    @property
+    def meta_dic(self):
+        return self._meta_dic
 
-def getMetadata(uri:str) -> {}:
-    ''' getMetadata
-    URIで指定されたデータソースよりメタデータを読み込み、'vistype'を付加して返す
+    @property
+    def tb_uri(self):
+        return self._tb_uri
 
-    Parameters
-    ----------
-    uri: str
-      データソースのURI
+    def connectTB(self, uri:str):
+        ''' connectTB
+        URIで指定されたデータソースに接続し、メタデータを読み込み、
+        'vistype'を付加して保持する。
 
-    Returns
-    -------
-    {}: メタデータ
-    '''
-    with urllib.request.urlopen(uri) as response:
-        res_bin = response.read()
-       
-    res_str = res_bin.decode()
-    res_dic = json.loads(res_str)
-    res_dic['vistype'] = ['isosurf']
-    return res_dic
+        Parameters
+        ----------
+        uri: str
+          データソースのURI
+        '''
+        with urllib.request.urlopen(uri) as response:
+            res_bin = response.read()
 
+        res_str = res_bin.decode()
+        res_dic = json.loads(res_str)
+        res_dic['vistype'] = ['isosurf']
+        self._meta_dic = res_dic
+        self._tb_uri = uri
+        return
 
-def getSPHdata(uri:str, id:int, stp:int) -> SPH.SPH:
-    ''' getSPHdata
-    URIで指定されたデータソースより、idとstepを指定してSPHデータを取得する
-    実際にアクセスするURLは'{uri}/data?id={id}&step={stp}'
+    def getSPHdata(self, id:int, stp:int) -> SPH.SPH:
+        ''' getSPHdata
+        TBより、idとstepを指定してSPHデータを取得する。
+        実際にアクセスするURLは'{uri}/data?id={id}&step={stp}'
 
-    Parameters
-    ----------
-    uri: str
-      データソースのURI
-    id: int
-      取得するSPHデータのID
-    step: int
-      取得するSPHデータのタイムステップインデックス番号
+        Parameters
+        ----------
+        id: int
+          取得するSPHデータのID
+        step: int
+          取得するSPHデータのタイムステップインデックス番号
 
-    Returns
-    -------
-    SPH.SPH: 取得したデータ
-    '''
-    xuri = uri
-    if xuri.endswith('/'):
-        xuri += 'data'
-    else:
-        xuri += '/data'
-    xuri += '?id={}'.format(id)
-    xuri += '&step={}'.format(stp)
-    with urllib.request.urlopen(xuri) as response:
-        res_bin = response.read()
-    res_str = res_bin.decode()
-    res_dic = json.loads(res_str)
-    sph = SPH_filter.fromJSON(res_dic['data'])
-    return sph
+        Returns
+        -------
+        SPH.SPH: 取得したデータ
+        '''
+        if not self._tb_uri:
+            return None
+        xuri = self._tb_uri
+        if xuri.endswith('/'):
+            xuri += 'data'
+        else:
+            xuri += '/data'
+        xuri += '?id={}'.format(id)
+        xuri += '&step={}'.format(stp)
+        with urllib.request.urlopen(xuri) as response:
+            res_bin = response.read()
+        res_str = res_bin.decode()
+        res_dic = json.loads(res_str)
+        sph = SPH_filter.fromJSON(res_dic['data'])
+        return sph
 
+g_app = None
 
+#-----------------------------------------------------------------------------
 class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
     ''' TB2C_server_ReqHandler
     TB2C server用のHTTPリクエストハンドラー実装クラスです。
     '''
-    
     def do_GET(self):
         ''' do_GET
         GETメソッド用のリクエストハンドラー
         要求されたパスが'/'の場合はメタデータを返し、'/quit'の場合は終了する。
         '''
-        global g_meta_dic, g_tb_uri
+        global g_app
         parsed_path = urlparse(self.path)
 
         if parsed_path.path == '/':
             # メタデータ要求 --- 図種('vistype')を追加したメタデータを返す
-            if not g_meta_dic:
+            if not g_app:
                 msg = 'no meta-data has hold.'
                 self.send_response(412)
                 self.send_header('Content-Type', 'text/plain')
@@ -94,7 +105,7 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(bytes(msg, 'utf-8'))
                 return
-            meta_str = json.dumps(g_meta_dic)
+            meta_str = json.dumps(g_app.meta_dic)
             body = bytes(meta_str, 'utf-8')
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
@@ -106,8 +117,8 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
         elif parsed_path.path == '/quit':
             # 停止要求 --- TBを停止させ、自分も終了する
             msg = 'ok'
-            if g_tb_uri:
-                xuri = g_tb_uri
+            if g_app and g_app.tb_uri:
+                xuri = g_app.tb_uri
                 if xuri.endswith('/'):
                     xuri += 'quit'
                 else:
@@ -134,9 +145,8 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
     def do_POST(self):
         ''' do_POST
         POSTメソッド用のリクエストハンドラー
-        要求されたパスが'/'の場合はメタデータを返し、'/quit'の場合は終了する。
+        要求されたパスが'/visualize'の場合はパラメータに従い可視化を行う。
         '''
-        global g_meta_dic, g_tb_uri
         content_length = int(self.headers['content-length'])
         parsed_path = urlparse(self.path)
 
@@ -205,13 +215,13 @@ if __name__ == '__main__':
                         default='.')
     args = parser.parse_args()
 
-    # get metadata from TB
+    # create TB2C_server and get metadata
+    g_app = TB2C_server()
     try:
-        g_meta_dic = getMetadata(args.t)
+        g_app.connectTB(args.t)
     except Exception as e:
         print('{}: get metadata failed: {}'.format(prog, str(e)))
         sys.exit(1)
-    g_tb_uri = args.t
 
     # invoke HTTP server
     host = '0.0.0.0'
