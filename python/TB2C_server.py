@@ -13,7 +13,10 @@ import urllib.request
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
+
 #-----------------------------------------------------------------------------
+g_app = None # global instance of TB2C_server
+
 class TB2C_server:
     def __init__(self):
         self._meta_dic = None
@@ -80,8 +83,6 @@ class TB2C_server:
         sph = SPH_filter.fromJSON(res_dic['data'])
         return sph
 
-g_app = None
-
 #-----------------------------------------------------------------------------
 class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
     ''' TB2C_server_ReqHandler
@@ -114,10 +115,16 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
             self.wfile.write(body)
             return
 
+        elif parsed_path.path == '/favicon.ico':
+            # ignore...
+            return
+            
         elif parsed_path.path == '/quit':
-            # 停止要求 --- TBを停止させ、自分も終了する
+            # 停止要求 --- 終了する。pathが'/data?with_tb=y'ならTBも停止させる。
             msg = 'ok'
-            if g_app and g_app.tb_uri:
+            qs = parse_qs(parsed_path.query)
+            if 'with_tb' in qs and qs['with_tb'][0] == 'y' and \
+               g_app and g_app.tb_uri:
                 xuri = g_app.tb_uri
                 if xuri.endswith('/'):
                     xuri += 'quit'
@@ -197,17 +204,14 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
         return
 
 
-def usage(prog:str ='TB2C_server'):
-    print('usage: {} [-p port] [-t url_TB] [-d out_dir]'.format(prog))
-    return
-
-
+#-----------------------------------------------------------------------------
 if __name__ == '__main__':
     import argparse
     prog = 'TB2C_server'
 
     # parse argv
-    parser = argparse.ArgumentParser(description='TB2C server')
+    parser = argparse.ArgumentParser(description='TB2C server',
+      usage='%(prog)s [-p 4000] [-t http://localhost:4001/] [-d ./]')
     parser.add_argument('-p', help='port number', type=int, default='4000')
     parser.add_argument('-t', help='URL of TB to connect', type=str,
                         default='http://localhost:4001/')
