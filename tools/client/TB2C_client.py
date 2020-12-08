@@ -16,20 +16,21 @@ except ImportError:
     haveOpenGL = False
 
 from frustum import *
+from trackball import Trackball
 
 #----------------------------------------------------------------------
 
 class OGL_CanvasBase(glcanvas.GLCanvas):
     def __init__(self, parent):
         glcanvas.GLCanvas.__init__(self, parent, -1)
-        self.init = False
         self.context = glcanvas.GLContext(self)
 
         self._frustum = Frustum()
+        self._trackball = Trackball()
+        self._size = None
 
-        self.lastx = self.x = 30
-        self.lasty = self.y = 30
-        self.size = None
+        self.lastx = self.x = 0
+        self.lasty = self.y = 0
 
         self.SetBackgroundStyle(wx.BG_STYLE_PAINT)
 
@@ -44,17 +45,13 @@ class OGL_CanvasBase(glcanvas.GLCanvas):
         event.Skip()
 
     def DoSetViewport(self):
-        size = self.size = self.GetClientSize()
+        size = self._size = self.GetClientSize()
         self.SetCurrent(self.context)
         glViewport(0, 0, size.width, size.height)
-        self.init = False
 
     def OnPaint(self, event):
         dc = wx.PaintDC(self)
         self.SetCurrent(self.context)
-        if not self.init:
-            self.InitGL()
-            self.init = True
         self.OnDraw()
 
     def OnMouseDown(self, evt):
@@ -68,13 +65,19 @@ class OGL_CanvasBase(glcanvas.GLCanvas):
         if evt.Dragging() and evt.LeftIsDown():
             self.lastx, self.lasty = self.x, self.y
             self.x, self.y = evt.GetPosition()
+            self._trackball.drag_to(self.lastx, self.lasty,
+                                    self.x-self.lastx, self.lasty-self.y)
             self.Refresh(False)
 
 
 class TB2C_Canvas(OGL_CanvasBase):
-    def InitGL(self):
-        self.size = self.GetClientSize()
-        w, h = self.size
+    def __init__(self, parent):
+        OGL_CanvasBase.__init__(self, parent)
+
+    def OnDraw(self):
+        if not self._size:
+            self._size = self.GetClientSize()
+        w, h = self._size
 
         # Projection Matrix
         glMatrixMode(GL_PROJECTION)
@@ -86,18 +89,17 @@ class TB2C_Canvas(OGL_CanvasBase):
         glLoadIdentity()
         self._frustum.ApplyModelview()
 
-        # position object
-        glRotatef(self.y, 1.0, 0.0, 0.0)
-        glRotatef(self.x, 0.0, 1.0, 0.0)
-
+        # set OpenGL mode
         glEnable(GL_DEPTH_TEST)
         glEnable(GL_LIGHTING)
         glEnable(GL_LIGHT0)
 
-    def OnDraw(self):
         # clear color and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
+        # apply trackball matrix
+        glMultMatrixf(self._trackball.matrix)
+        
         # draw six faces of a cube
         glBegin(GL_QUADS)
         glNormal3f( 0.0, 0.0, 1.0)
@@ -136,15 +138,6 @@ class TB2C_Canvas(OGL_CanvasBase):
         glVertex3f(-0.5, 0.5, 0.5)
         glVertex3f(-0.5, 0.5,-0.5)
         glEnd()
-
-        self.size = self.GetClientSize()
-        w, h = self.size
-        w = max(w, 1.0)
-        h = max(h, 1.0)
-        xScale = 180.0 / w
-        yScale = 180.0 / h
-        glRotatef((self.y - self.lasty) * yScale, 1.0, 0.0, 0.0);
-        glRotatef((self.x - self.lastx) * xScale, 0.0, 1.0, 0.0);
 
         self.SwapBuffers()
 
