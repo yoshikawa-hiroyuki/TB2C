@@ -65,9 +65,14 @@ class OGL_CanvasBase(glcanvas.GLCanvas):
         if evt.Dragging() and evt.LeftIsDown():
             self.lastx, self.lasty = self.x, self.y
             self.x, self.y = evt.GetPosition()
+            #if evt.ShiftDown():
+            #    print('Shift down.')
+            if evt.ControlDown():
+                print('Control down.')
             self._trackball.drag_to(self.lastx, self.lasty,
                                     self.x-self.lastx, self.lasty-self.y)
             self.Refresh(False)
+
 
 
 class TB2C_Canvas(OGL_CanvasBase):

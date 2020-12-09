@@ -21,6 +21,7 @@ class TB2C_server:
     def __init__(self):
         self._meta_dic = None
         self._tb_uri = None
+        self._div = [1, 1, 1]
         return
     
     @property
@@ -30,6 +31,10 @@ class TB2C_server:
     @property
     def tb_uri(self):
         return self._tb_uri
+
+    @property
+    def div(self):
+        return self._div
 
     def connectTB(self, uri:str):
         ''' connectTB
@@ -51,7 +56,7 @@ class TB2C_server:
         self._tb_uri = uri
         return
 
-    def getSPHdata(self, id:int, stp:int) -> SPH.SPH:
+    def getSPHdata(self, id:int, stp:int) -> [SPH.SPH]:
         ''' getSPHdata
         TBより、idとstepを指定してSPHデータを取得する。
         実際にアクセスするURLは'{uri}/data?id={id}&step={stp}'
@@ -65,7 +70,7 @@ class TB2C_server:
 
         Returns
         -------
-        SPH.SPH: 取得したデータ
+        [SPH.SPH]: 取得したデータ(を分割したリスト)
         '''
         if not self._tb_uri:
             return None
@@ -81,7 +86,13 @@ class TB2C_server:
         res_str = res_bin.decode()
         res_dic = json.loads(res_str)
         sph = SPH_filter.fromJSON(res_dic['data'])
-        return sph
+        if not sph:
+            return []
+        if self.div[0]*self.div[1]*self.div[2] > 1:
+            sph_list = SPH_filter.divideShareEdge(sph, self.div)
+        else:
+            sph_list = [sph]
+        return sph_list
 
 #-----------------------------------------------------------------------------
 class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
@@ -120,7 +131,7 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
             return
             
         elif parsed_path.path == '/quit':
-            # 停止要求 --- 終了する。pathが'/data?with_tb=y'ならTBも停止させる。
+            # 停止要求 --- 終了する。pathが'/quit?with_tb=y'ならTBも停止させる。
             msg = 'ok'
             qs = parse_qs(parsed_path.query)
             if 'with_tb' in qs and qs['with_tb'][0] == 'y' and \
@@ -183,8 +194,9 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
                 return
 
             # get data of step, and visualize
-            #sph = getSPHdata(args.t, g_meta_dic['id'], step)
-            
+            sph_lst = g_app.getSPHdata(g_app.meta_dic['id'], step)
+            for s in sph_lst:
+                print(s._dims)
             
         else:
             msg = 'invalid URL specified.'
@@ -211,34 +223,39 @@ if __name__ == '__main__':
 
     # parse argv
     parser = argparse.ArgumentParser(description='TB2C server',
-      usage='%(prog)s [-p 4000] [-t http://localhost:4001/] [-d ./]')
-    parser.add_argument('-p', help='port number', type=int, default='4000')
-    parser.add_argument('-t', help='URL of TB to connect', type=str,
+      usage='%(prog)s [--port 4000] [--tb http://localhost:4001/] [--odir ./]')
+    parser.add_argument('--port', help='port number', type=int, default='4000')
+    parser.add_argument('--tb', help='URL of TB to connect', type=str,
                         default='http://localhost:4001/')
-    parser.add_argument('-d', help='output dir for tileset.json', type=str,
-                        default='.')
+    parser.add_argument('--odir', type=str, default='.',
+                        help='output directory for tileset.json')
+    parser.add_argument('--dx', type=int, default=1,
+                        help='Number of divisions in the X-axis direction')
+    parser.add_argument('--dy', type=int, default=1,
+                        help='Number of divisions in the Y-axis direction')
+    parser.add_argument('--dz', type=int, default=1,
+                        help='Number of divisions in the Z-axis direction')
     args = parser.parse_args()
 
     # create TB2C_server and get metadata
     g_app = TB2C_server()
+    g_app._div[:] = [args.dx, args.dy, args.dz]
     try:
-        g_app.connectTB(args.t)
+        g_app.connectTB(args.tb)
     except Exception as e:
         print('{}: get metadata failed: {}'.format(prog, str(e)))
         sys.exit(1)
 
     # invoke HTTP server
     host = '0.0.0.0'
-    port = args.p
+    port = args.port
     try:
         httpd = HTTPServer((host, port), TB2C_server_ReqHandler)
     except Exception as e:
         print('{}: invoke httpd failed: {}'.format(prog, str(e)))
         sys.exit(1)
-    print('{}: serving started at port#{}'.format(prog, port))
+    print('{}: started at port#{}'.format(prog, port))
     httpd.serve_forever()
 
     sys.exit(0)
-    #sph = getSPHdata(args.t, g_meta_dic['id'], 30)
-    #print(sph)
     
