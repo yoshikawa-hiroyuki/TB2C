@@ -15,6 +15,7 @@ try:
 except ImportError:
     haveOpenGL = False
 
+from utilMath import *
 from frustum import *
 from trackball import Trackball
 
@@ -28,6 +29,10 @@ class OGL_CanvasBase(glcanvas.GLCanvas):
         self._frustum = Frustum()
         self._trackball = Trackball()
         self._size = None
+
+        self._T = Mat4()
+        self._R = Mat4()
+        #self._S = Mat4()
 
         self.lastx = self.x = 0
         self.lasty = self.y = 0
@@ -65,12 +70,17 @@ class OGL_CanvasBase(glcanvas.GLCanvas):
         if evt.Dragging() and evt.LeftIsDown():
             self.lastx, self.lasty = self.x, self.y
             self.x, self.y = evt.GetPosition()
-            #if evt.ShiftDown():
-            #    print('Shift down.')
-            if evt.ControlDown():
-                print('Control down.')
-            self._trackball.drag_to(self.lastx, self.lasty,
-                                    self.x-self.lastx, self.lasty-self.y)
+            if evt.ShiftDown():
+                self._T.Translate([(self.x-self.lastx)*0.1/self._frustum._dist,
+                                   (self.lasty-self.y)*0.1/self._frustum._dist,
+                                   0.0])
+            elif evt.ControlDown():
+                self._T.Translate([0.0, 0.0,
+                                   (self.lasty-self.y)*0.1/self._frustum._dist])
+            else:
+                self._trackball.drag_to(self.lastx, self.lasty,
+                                        self.x-self.lastx, self.lasty-self.y)
+                self._R.m_v[:] = self._trackball.matrix[:]
             self.Refresh(False)
 
 
@@ -102,8 +112,11 @@ class TB2C_Canvas(OGL_CanvasBase):
         # clear color and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
-        # apply trackball matrix
-        glMultMatrixf(self._trackball.matrix)
+        # apply matrices
+        #glMultMatrixf(self._trackball.matrix)
+        glMultMatrixf(self._T.m_v)
+        glMultMatrixf(self._R.m_v)
+        #glMultMatrixf(self._S.m_v)
         
         # draw six faces of a cube
         glBegin(GL_QUADS)
