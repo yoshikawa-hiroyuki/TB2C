@@ -245,7 +245,8 @@ if __name__ == '__main__':
     prog = 'TB'
 
     # parse argv
-    parser = argparse.ArgumentParser(description='Temporal Buffer prototype')
+    parser = argparse.ArgumentParser(description='Temporal Buffer prototype',
+      usage='%(prog)s [-p port] [-j input.json | -l file0.sph file1.sph ...]')
     parser.add_argument('-p', help='port number', type=int, default='4001')
     parser.add_argument('-j', help='path of input.json')
     parser.add_argument('-l', help='pathes of input sph files', nargs='*')

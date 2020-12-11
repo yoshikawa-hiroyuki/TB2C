@@ -223,7 +223,8 @@ if __name__ == '__main__':
 
     # parse argv
     parser = argparse.ArgumentParser(description='TB2C server',
-      usage='%(prog)s [--port 4000] [--tb http://localhost:4001/] [--odir ./]')
+      usage='%(prog)s [--port 4000] [--tb http://localhost:4001/]'\
+        + '\n        [--odir ./] [--dx divX] [--dy divY] [--dz divZ]')
     parser.add_argument('--port', help='port number', type=int, default='4000')
     parser.add_argument('--tb', help='URL of TB to connect', type=str,
                         default='http://localhost:4001/')

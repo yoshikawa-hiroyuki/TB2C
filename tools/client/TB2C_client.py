@@ -18,6 +18,7 @@ except ImportError:
 from utilMath import *
 from frustum import *
 from trackball import Trackball
+from bbox import BBox
 
 #----------------------------------------------------------------------
 
@@ -88,6 +89,15 @@ class OGL_CanvasBase(glcanvas.GLCanvas):
 class TB2C_Canvas(OGL_CanvasBase):
     def __init__(self, parent):
         OGL_CanvasBase.__init__(self, parent)
+        self._obj = BBox()
+        self._obj.fit(self._frustum)
+
+    def setBoxSize(self, minpos, maxpos):
+        self._obj._p0[:] = minpos[:]
+        self._obj._p1[:] = maxpos[:]
+        self._obj.fit(self._frustum)
+        self.Refresh(False)
+        return
 
     def OnDraw(self):
         if not self._size:
@@ -106,8 +116,9 @@ class TB2C_Canvas(OGL_CanvasBase):
 
         # set OpenGL mode
         glEnable(GL_DEPTH_TEST)
-        glEnable(GL_LIGHTING)
-        glEnable(GL_LIGHT0)
+        #glEnable(GL_LIGHTING)
+        #glEnable(GL_LIGHT0)
+        #glLightfv(GL_LIGHT0, GL_POSITION, [0.0, 10.0, 10.0, 0.0])
 
         # clear color and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
@@ -118,46 +129,12 @@ class TB2C_Canvas(OGL_CanvasBase):
         glMultMatrixf(self._R.m_v)
         #glMultMatrixf(self._S.m_v)
         
-        # draw six faces of a cube
-        glBegin(GL_QUADS)
-        glNormal3f( 0.0, 0.0, 1.0)
-        glVertex3f( 0.5, 0.5, 0.5)
-        glVertex3f(-0.5, 0.5, 0.5)
-        glVertex3f(-0.5,-0.5, 0.5)
-        glVertex3f( 0.5,-0.5, 0.5)
+        # draw obj
+        self._obj.draw()
 
-        glNormal3f( 0.0, 0.0,-1.0)
-        glVertex3f(-0.5,-0.5,-0.5)
-        glVertex3f(-0.5, 0.5,-0.5)
-        glVertex3f( 0.5, 0.5,-0.5)
-        glVertex3f( 0.5,-0.5,-0.5)
-
-        glNormal3f( 0.0, 1.0, 0.0)
-        glVertex3f( 0.5, 0.5, 0.5)
-        glVertex3f( 0.5, 0.5,-0.5)
-        glVertex3f(-0.5, 0.5,-0.5)
-        glVertex3f(-0.5, 0.5, 0.5)
-
-        glNormal3f( 0.0,-1.0, 0.0)
-        glVertex3f(-0.5,-0.5,-0.5)
-        glVertex3f( 0.5,-0.5,-0.5)
-        glVertex3f( 0.5,-0.5, 0.5)
-        glVertex3f(-0.5,-0.5, 0.5)
-
-        glNormal3f( 1.0, 0.0, 0.0)
-        glVertex3f( 0.5, 0.5, 0.5)
-        glVertex3f( 0.5,-0.5, 0.5)
-        glVertex3f( 0.5,-0.5,-0.5)
-        glVertex3f( 0.5, 0.5,-0.5)
-
-        glNormal3f(-1.0, 0.0, 0.0)
-        glVertex3f(-0.5,-0.5,-0.5)
-        glVertex3f(-0.5,-0.5, 0.5)
-        glVertex3f(-0.5, 0.5, 0.5)
-        glVertex3f(-0.5, 0.5,-0.5)
-        glEnd()
-
+        # done
         self.SwapBuffers()
+        return
 
 
 #----------------------------------------------------------------------
@@ -173,7 +150,9 @@ if __name__ == '__main__':
 
     frame = wx.Frame(None, title='TB2C client')
     canvas = TB2C_Canvas(frame)
+    canvas.setBoxSize([0.0, 0.0, 0.0], [100.0, 50.0, 20.0])
     frame.Show()
+    
     app.MainLoop()
 
     sys.exit(0)
