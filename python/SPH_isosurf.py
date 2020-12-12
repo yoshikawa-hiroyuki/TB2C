@@ -4,7 +4,7 @@
 SPH_isosurf
 """
 
-import sys, os
+import sys, os, typing
 import numpy as np
 from pySPH import SPH
 from skimage import measure
@@ -40,14 +40,14 @@ class SPH_isosurf:
         return (verts, faces, normals)
 
     @staticmethod
-    def saveOBJ(path, verts, faces, normals) -> bool:
+    def saveOBJ(f: typing.IO, verts, faces, normals) -> bool:
         ''' saveOBJ
         generateで生成された等値面をOBJファイルに出力する(static method)
 
         Parameters
         ----------
-        path: str
-          OBJファイルのパス
+        f: typing.IO
+          OBJファイル
         verts: float[]
           等値面の頂点リスト
         faces: int[]
@@ -60,15 +60,14 @@ class SPH_isosurf:
         bool: 成功=True、失敗=False
         '''
         try:
-            with open(path, 'w') as f:
-                f.write('o SPH_isosurf\n')
-                for v in verts:
-                    f.write('v {} {} {}\n'.format(*v))
-                for vn in normals:
-                    f.write('vn {} {} {}\n'.format(*vn))
-                for tri in faces:
-                    f.write('f {}//{} {}//{} {}//{}\n'.format(
-                        tri[0]+1,tri[0]+1,tri[1]+1,tri[1]+1,tri[2]+1,tri[2]+1))
+            f.write('o SPH_isosurf\n')
+            for v in verts:
+                f.write('v {} {} {}\n'.format(*v))
+            for vn in normals:
+                f.write('vn {} {} {}\n'.format(*vn))
+            for tri in faces:
+                f.write('f {}//{} {}//{} {}//{}\n'.format(
+                    tri[0]+1,tri[0]+1,tri[1]+1,tri[1]+1,tri[2]+1,tri[2]+1))
         except Exception as e:
             return False
 

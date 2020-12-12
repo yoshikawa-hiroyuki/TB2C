@@ -26,6 +26,8 @@ sphS = SPH_filter.vectorMag(sphV)
 print(sphS._min, sphS._max)
 
 v, f, n = SPH_isosurf.generate(sphS, 3.3)
-SPH_isosurf.saveOBJ('/tmp/isosurf.obj', v, f, n)
+objfile = open('/tmp/isosurf.obj', 'wb')
+SPH_isosurf.saveOBJ(objfile, v, f, n)
+objfile.close()
 
 print('done.')
