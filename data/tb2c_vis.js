@@ -3,7 +3,7 @@ window.onload = function() {
     /* global itowns,document,GuiTools*/
     var placement = {
         coord: new itowns.Coordinates('EPSG:4326', 0.0, 0.0, 0),
-        range: 4000,
+        range: 200,
         tilt: 89.9,
         heading: 0.0
     }

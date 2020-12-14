@@ -40,7 +40,7 @@ class SPH_isosurf:
         return (verts, faces, normals)
 
     @staticmethod
-    def saveOBJ(f: typing.IO, verts, faces, normals) -> bool:
+    def saveOBJ(f: typing.IO, verts, faces, normals):
         ''' saveOBJ
         generateで生成された等値面をOBJファイルに出力する(static method)
 
@@ -54,22 +54,14 @@ class SPH_isosurf:
           等値面の三角形の頂点リスト
         normals: float[]
           等値面の頂点の法線ベクトルリスト
-
-        Returns
-        -------
-        bool: 成功=True、失敗=False
         '''
-        try:
-            f.write('o SPH_isosurf\n')
-            for v in verts:
-                f.write('v {} {} {}\n'.format(*v))
-            for vn in normals:
-                f.write('vn {} {} {}\n'.format(*vn))
-            for tri in faces:
-                f.write('f {}//{} {}//{} {}//{}\n'.format(
-                    tri[0]+1,tri[0]+1,tri[1]+1,tri[1]+1,tri[2]+1,tri[2]+1))
-        except Exception as e:
-            return False
-
-        return True
+        f.write('o SPH_isosurf\n')
+        for v in verts:
+            f.write('v {} {} {}\n'.format(*v))
+        for vn in normals:
+            f.write('vn {} {} {}\n'.format(*vn))
+        for tri in faces:
+            f.write('f {}//{} {}//{} {}//{}\n'.format(
+                tri[0]+1,tri[0]+1,tri[1]+1,tri[1]+1,tri[2]+1,tri[2]+1))
+        return
     
