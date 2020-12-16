@@ -33,7 +33,7 @@ class OGL_CanvasBase(glcanvas.GLCanvas):
 
         self._T = Mat4()
         self._R = Mat4()
-        #self._S = Mat4()
+        self._S = Mat4()
 
         self.lastx = self.x = 0
         self.lasty = self.y = 0
@@ -42,9 +42,11 @@ class OGL_CanvasBase(glcanvas.GLCanvas):
 
         self.Bind(wx.EVT_SIZE, self.OnSize)
         self.Bind(wx.EVT_PAINT, self.OnPaint)
+        self.Bind(wx.EVT_LEFT_DCLICK, self.OnDoubleClick)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseDown)
         self.Bind(wx.EVT_LEFT_UP, self.OnMouseUp)
         self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
+        self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
 
     def OnSize(self, event):
         wx.CallAfter(self.DoSetViewport)
@@ -60,12 +62,21 @@ class OGL_CanvasBase(glcanvas.GLCanvas):
         self.SetCurrent(self.context)
         self.OnDraw()
 
+    def OnDoubleClick(self, evt):
+        self._T.Identity()
+        self._R.Identity()
+        self._S.Identity()
+        self._trackball._rotation = [0,0,0,1]
+        self.Refresh(False)
+        return
+
     def OnMouseDown(self, evt):
         self.CaptureMouse()
         self.x, self.y = self.lastx, self.lasty = evt.GetPosition()
 
     def OnMouseUp(self, evt):
-        self.ReleaseMouse()
+        if self.HasCapture():
+            self.ReleaseMouse()
 
     def OnMouseMotion(self, evt):
         if evt.Dragging() and evt.LeftIsDown():
@@ -84,6 +95,10 @@ class OGL_CanvasBase(glcanvas.GLCanvas):
                 self._R.m_v[:] = self._trackball.matrix[:]
             self.Refresh(False)
 
+    def OnMouseWheel(self, evt):
+        rot = evt.GetWheelRotation() / evt.GetWheelDelta()
+        self._S.Scale(1.0 + 0.1*rot)
+        self.Refresh(False)
 
 
 class TB2C_Canvas(OGL_CanvasBase):
@@ -127,7 +142,7 @@ class TB2C_Canvas(OGL_CanvasBase):
         #glMultMatrixf(self._trackball.matrix)
         glMultMatrixf(self._T.m_v)
         glMultMatrixf(self._R.m_v)
-        #glMultMatrixf(self._S.m_v)
+        glMultMatrixf(self._S.m_v)
         
         # draw obj
         self._obj.draw()
@@ -148,7 +163,7 @@ if __name__ == '__main__':
         wx.MessageBox('This program requires the PyOpenGL package.', 'Error')
         sys.exit(1)
 
-    frame = wx.Frame(None, title='TB2C client')
+    frame = wx.Frame(None, title='TB2C client', size=(800, 600))
     canvas = TB2C_Canvas(frame)
     canvas.setBoxSize([0.0, 0.0, 0.0], [100.0, 50.0, 20.0])
     frame.Show()
