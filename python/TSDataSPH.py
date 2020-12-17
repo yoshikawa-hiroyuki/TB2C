@@ -46,9 +46,9 @@ class TSDataSPH(TSData):
         for i in range(self.datalen):
             self._minMaxList.append([sph._min[i], sph._max[i]])
         self._bbox[0] = sph._org
-        self._bbox[1] = [sph._org[0] * sph._pitch[0] * (sph._dims[0]-1),
-                         sph._org[1] * sph._pitch[1] * (sph._dims[1]-1),
-                         sph._org[2] * sph._pitch[2] * (sph._dims[2]-1)]
+        self._bbox[1] = [sph._org[0] + sph._pitch[0] * (sph._dims[0]-1),
+                         sph._org[1] + sph._pitch[1] * (sph._dims[1]-1),
+                         sph._org[2] + sph._pitch[2] * (sph._dims[2]-1)]
         self._stepList.append(sph._step)
         self._timeList.append(sph._time)
         self._fileList.append(fn)
@@ -79,9 +79,9 @@ class TSDataSPH(TSData):
             if self._bbox[0][0] > sph._org[0]: self._bbox[0][0] = sph._org[0]
             if self._bbox[0][1] > sph._org[1]: self._bbox[0][1] = sph._org[1]
             if self._bbox[0][2] > sph._org[2]: self._bbox[0][2] = sph._org[2]
-            gro = [sph._org[0] * sph._pitch[0] * (sph._dims[0]-1),
-                   sph._org[1] * sph._pitch[1] * (sph._dims[1]-1),
-                   sph._org[2] * sph._pitch[2] * (sph._dims[2]-1)]
+            gro = [sph._org[0] + sph._pitch[0] * (sph._dims[0]-1),
+                   sph._org[1] + sph._pitch[1] * (sph._dims[1]-1),
+                   sph._org[2] + sph._pitch[2] * (sph._dims[2]-1)]
             if self._bbox[1][0] < gro[0]: self._bbox[1][0] = gro[0]
             if self._bbox[1][1] < gro[1]: self._bbox[1][1] = gro[1]
             if self._bbox[1][2] < gro[2]: self._bbox[1][2] = gro[2]
