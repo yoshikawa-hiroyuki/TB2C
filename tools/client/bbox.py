@@ -14,7 +14,7 @@ class BBox:
         self._p1 = Vec3(maxpos)
         self._T = Mat4()
         self._S = Mat4()
-        self._mode = BBox.MODE_WIRE
+        self._mode = BBox.MODE_FACE
 
     def draw(self):
         # apply local matrices

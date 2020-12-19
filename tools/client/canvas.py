@@ -122,10 +122,15 @@ class TB2C_Canvas(OGL_CanvasBase):
         self._frustum.ApplyModelview()
 
         # set OpenGL mode
+        glEnable(GL_NORMALIZE)
         glEnable(GL_DEPTH_TEST)
-        #glEnable(GL_LIGHTING)
-        #glEnable(GL_LIGHT0)
-        #glLightfv(GL_LIGHT0, GL_POSITION, [0.0, 10.0, 10.0, 0.0])
+        glEnable(GL_LIGHTING)
+        glEnable(GL_LIGHT0)
+        glEnable(GL_LIGHT1)
+        glLightfv(GL_LIGHT0, GL_POSITION, [0.0, 0.0, 100.0, 1.0])
+        glLightfv(GL_LIGHT0, GL_DIFFUSE, [1.0, 0.4, 0.3, 1.0]);
+        glLightfv(GL_LIGHT1, GL_POSITION, [0.0, 50.0, -100.0, 1.0])
+        glLightfv(GL_LIGHT1, GL_DIFFUSE, [0.2, 0.4, 1.0, 1.0]);
 
         # clear color and depth buffers
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
