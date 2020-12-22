@@ -22,6 +22,7 @@ class TSData:
         self._dataList = []
         self._datalen = 0
         self._minMaxList = []
+        self._minMaxVeclen = None
         self._hasMinMax = False
         self._evt.clear()
         return
@@ -61,6 +62,12 @@ class TSData:
     def minMax(self):
         if self._hasMinMax:
             return self._minMaxList
+        else:
+            return None
+    @property
+    def minMaxVeclen(self):
+        if self._minMaxVeclen:
+            return self._minMaxVeclen
         else:
             return None
     

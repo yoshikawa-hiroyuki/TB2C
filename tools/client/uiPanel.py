@@ -39,6 +39,21 @@ class TB2C_UIPanel(wx.Panel):
                      flag=wx.ALIGN_RIGHT|wx.ALL)
 
         self.SetSizer(topSizer)
+        return
+
+    def setInformation(self, info:str):
+        self._infoTxt.SetValue(info)
+
+    def setTimeStepRange(self, steps:int):
+        self._tsSlider.SetMin(0)
+        self._tsSlider.SetMax(steps-1)
+        self._tsSlider.SetValue(0)
+        self._tsTxt.SetValue(str(0))
+
+    def setValueRange(self, vrange:[]):
+        self._isovalSlider.SetValue(50)
+        val = (vrange[0] + vrange[1]) * 0.5
+        self._isovalTxt.SetValue(str(val))
 
 #-------------------------------------
 if __name__ == '__main__':

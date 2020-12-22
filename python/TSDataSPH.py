@@ -43,6 +43,11 @@ class TSDataSPH(TSData):
             return False
         self._dims[:] = sph._dims[:]
         self.datalen = sph._veclen
+        if self.datalen > 1:
+            self._minMaxVeclen \
+                = [0.0, np.linalg.norm(sph._max, ord=self.datalen)]
+        else:
+            self._minMaxVeclen = None
         for i in range(self.datalen):
             self._minMaxList.append([sph._min[i], sph._max[i]])
         self._bbox[0] = sph._org
@@ -76,6 +81,10 @@ class TSDataSPH(TSData):
                     self._minMaxList[i][0] = sph._min[i]
                 if self._minMaxList[i][1] < sph._max[i]:
                     self._minMaxList[i][1] = sph._max[i]
+            if self.datalen > 1:
+                vnorm = np.linalg.norm(sph._max, ord=self.datalen)
+                if vnorm > self._minMaxVeclen[1]:
+                    self._minMaxVeclen[1] = vnorm
             if self._bbox[0][0] > sph._org[0]: self._bbox[0][0] = sph._org[0]
             if self._bbox[0][1] > sph._org[1]: self._bbox[0][1] = sph._org[1]
             if self._bbox[0][2] > sph._org[2]: self._bbox[0][2] = sph._org[2]

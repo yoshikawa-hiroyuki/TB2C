@@ -1,7 +1,9 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
 import sys, os
-import wx
+import json
+import wx # need to install via pip3 (wxPython)
+import requests # need to install via pip3
 
 import canvas
 import uiPanel
@@ -11,6 +13,8 @@ class TB2C_App(wx.App):
     def OnInit(self):
         self.SetVendorName('RIKEN')
         self.SetAppName('TB2C_client')
+        self._metaDic = None
+        self._lastErr = None
 
         self._tb2c_serv_url = None
         self._chowder_host = None
@@ -32,7 +36,7 @@ class TB2C_App(wx.App):
 
         # gfx canvas
         self._canvas = canvas.TB2C_Canvas(self._frame, self)
-        self._canvas.setBoxSize([0.0, 0.0, 0.0], [100.0, 50.0, 20.0])
+        self._canvas.setBoxSize([0.0, 0.0, 0.0], [1.0, 1.0, 1.0])
 
         # UI panel
         self._uiPanel = uiPanel.TB2C_UIPanel(self._frame, self)
@@ -47,6 +51,17 @@ class TB2C_App(wx.App):
         self.SetTopWindow(self._frame)
         self._frame.Show()
         return True
+
+    @property
+    def metaDic(self):
+        return self._metaDic
+    
+    @property
+    def lastError(self):
+        ret = self._lastErr
+        if self._lastErr:
+            self._lastErr = None
+        return ret
 
     def Message(self, msg:str, err:bool=False):
         if err:
@@ -81,6 +96,52 @@ class TB2C_App(wx.App):
 
     
     def connectTB2CSrv(self, url:str) -> bool:
+        try:
+            res = requests.get(url)
+        except Exception as e:
+            self._lastErr = str(e)
+            return False
+        if res.status_code != 200:
+            self._lastErr = res.text
+            return False
+        
+        # load and check metadata
+        try:
+            xdic = json.loads(res.text)
+            if xdic['type'] != 'SPH' or \
+               xdic['dims'][0]*xdic['dims'][1]*xdic['dims'][2] < 8 or \
+               xdic['datalen'] < 1 or xdic['steps'] < 1 or \
+               not 'isosurf' in xdic['vistype'] or \
+               xdic['vrange'][0] > xdic['vrange'][1] or \
+               xdic['bbox'][0][0] > xdic['bbox'][1][0] or \
+               xdic['bbox'][0][1] > xdic['bbox'][1][1] or \
+               xdic['bbox'][0][2] > xdic['bbox'][1][2]:
+                self._lastErr = 'invalid metadata responsed.'
+                return False
+        except Exception as e:
+            self._lastErr = str(e)
+            return False
+        # update bbox
+        self._canvas.setBoxSize(xdic['bbox'][0], xdic['bbox'][1])
+        # update info
+        info = 'url={}\n'.format(url)
+        info += 'steps={}'.format(xdic['steps'])
+        try:
+            info += ' ({},{})'.format(xdic['timerange'][0],xdic['timerange'][1])
+        except:
+            pass
+        info += '\n'
+        info += 'datalen={}\n'.format(xdic['datalen'])
+        info += 'vrange={}\n'.format(xdic['vrange'])
+        info += 'bbox=({}, {})'.format(xdic['bbox'][0], xdic['bbox'][1])
+        self._uiPanel.setInformation(info)
+        # update timestep range
+        self._uiPanel.setTimeStepRange(xdic['steps'])
+        # update isovalue range
+        self._uiPanel.setValueRange(xdic['vrange'])
+        
+        self._metaDic = xdic
+        self._tb2c_serv_url = url
         return True
 
     def requestTB2CSrv(self):
@@ -110,7 +171,9 @@ if __name__ == '__main__':
     # prepare App
     app = TB2C_App()
     if args.s:
-        app.connectTB2CSrv(args.s)
+        if not app.connectTB2CSrv(args.s):
+            print('Error: {}'.format(app.lastError))
+            sys.exit(1)
     if args.c:
         app.connectChOWDER(args.c)
 

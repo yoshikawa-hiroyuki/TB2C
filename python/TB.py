@@ -160,6 +160,10 @@ class TBReqHandler(SimpleHTTPRequestHandler):
             metad['steps'] = len(g_tb._tsdata._stepList)
             metad['timerange'] = [g_tb._tsdata._timeList[0],
                                   g_tb._tsdata._timeList[-1]]
+            if g_tb._tsdata._datalen > 1:
+                metad['vrange'] = g_tb._tsdata._minMaxVeclen
+            else:
+                metad['vrange'] = g_tb._tsdata._minMaxList[0]
             
         elif parsed_path.path in ('/data', '/data/'):
             # データ要求 --- 指定されたstepのデータを返す
