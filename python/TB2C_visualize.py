@@ -6,23 +6,26 @@ TB2C_visualize
 import os, sys
 import json
 import subprocess
+from math import log10
+from collections import OrderedDict
+
 from pySPH import SPH
 from SPH_isosurf import SPH_isosurf
-from math import log10
+
 
 class TB2C_visualize:
     def __init__(self, outdir:str ='.'):
         self._outDir = outdir
         self._obj23dt_ver = None
-        self._doc = {
-            'asset':{
+        self._doc = OrderedDict({
+            'asset':OrderedDict({
                 'version': '0.0',
                 'tilesetVersion': '1.0.0-obj23dtiles',
                 'gltfUpAxis': 'Z'
-            },
+            }),
             'geometricError': 500,
-            'root': {}
-        }
+            'root': OrderedDict({})
+        })
         return
 
     def checkObj23dtiles(self):
@@ -42,9 +45,6 @@ class TB2C_visualize:
             return False
         return True
 
-    def createTileset(self, node_lst:[]) -> bool:
-        pass
-        
     def isosurf(self, sph_lst:[SPH.SPH], value:float, fnbase:str='isosurf') \
         -> bool:
         ''' isosurf
@@ -106,7 +106,7 @@ class TB2C_visualize:
             continue # end of for(sph)
 
         # create tileset.json
-
+        
         json_path = os.path.join(self._outDir, 'tileset.json')
         try:
             f = open(json_path, 'w')
