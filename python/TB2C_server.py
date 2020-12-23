@@ -5,23 +5,30 @@ TB2C_server
 """
 import sys, os
 import numpy as np
-from pySPH import SPH
-from SPH_filter import SPH_filter
 import json
 import urllib.request
-
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib.parse import parse_qs, urlparse
 
+import TB2C_visualize
+from pySPH import SPH
+from SPH_filter import SPH_filter
 
 #-----------------------------------------------------------------------------
 g_app = None # global instance of TB2C_server
 
 class TB2C_server:
+    ''' TB2C_server
+    TB2C serverのプロトタイプ実装クラスです。
+    '''
     def __init__(self):
         self._meta_dic = None
         self._tb_uri = None
         self._div = [1, 1, 1]
+        self._out_dir = '.'
+        self._last_step = -1
+        self._last_sph_list = []
+        self._obj23dt_ver = None
         return
     
     @property
@@ -35,6 +42,10 @@ class TB2C_server:
     @property
     def div(self):
         return self._div
+
+    @property
+    def out_dir(self):
+        return self._out_dir
 
     def connectTB(self, uri:str):
         ''' connectTB
@@ -54,6 +65,8 @@ class TB2C_server:
         res_dic['vistype'] = ['isosurf']
         self._meta_dic = res_dic
         self._tb_uri = uri
+        self._last_step = -1
+        self._last_sph_list = []
         return
 
     def getSPHdata(self, id:int, stp:int) -> [SPH.SPH]:
@@ -74,6 +87,9 @@ class TB2C_server:
         '''
         if not self._tb_uri:
             return None
+        if stp == self._last_step:
+            return self._last_sph_list
+        
         xuri = self._tb_uri
         if xuri.endswith('/'):
             xuri += 'data'
@@ -89,20 +105,60 @@ class TB2C_server:
         if not sph:
             return []
         if self.div[0]*self.div[1]*self.div[2] > 1:
-            sph_list = SPH_filter.divideShareEdge(sph, self.div)
+            self._last_sph_list = SPH_filter.divideShareEdge(sph, self.div)
         else:
-            sph_list = [sph]
-        return sph_list
+            self._last_sph_list = [sph]
+        self._last_step = stp
+        return self._last_sph_list
+
+    def generateIsosurf(self, value:float) -> bool:
+        ''' generateIsosurf
+        現在保持しているSPHデータに対し、valueで指定された値で等値面を生成し、
+        3D-Tiles形式のファイルに出力します。
+
+        Parameters
+        ----------
+        value: float
+          等値面を生成する値
+
+        Returns
+        -------
+        bool: True=成功、False=失敗
+        '''
+        if self._last_step < 0:
+            return False
+        vis = TB2C_visualize.TB2C_visualize(self._out_dir)
+        if not vis.isosurf(self._last_sph_list, value):
+            return False
+        return True
 
 #-----------------------------------------------------------------------------
 class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
     ''' TB2C_server_ReqHandler
     TB2C server用のHTTPリクエストハンドラー実装クラスです。
     '''
+    def sendMsgRes(self, code:int, msg:str):
+        ''' sendMsgRes
+        HTTPアクセスに対するtext/plain形式のレスポンスを返す。
+
+        Parameters
+        ----------
+        code: int
+          レスポンスコード
+        msg: str
+          レスポンスメッセージ
+        '''
+        self.send_response(code)
+        self.send_header('Content-Type', 'text/plain')
+        self.send_header('Content-length', len(msg))
+        self.end_headers()
+        self.wfile.write(bytes(msg, 'utf-8'))
+        return
+    
     def do_GET(self):
         ''' do_GET
         GETメソッド用のリクエストハンドラー
-        要求されたパスが'/'の場合はメタデータを返し、'/quit'の場合は終了する。
+        要求されたパスが'/'の場合はメタデータを返し、'/quit'の場合は終了します。
         '''
         global g_app
         parsed_path = urlparse(self.path)
@@ -111,11 +167,7 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
             # メタデータ要求 --- 図種('vistype')を追加したメタデータを返す
             if not g_app:
                 msg = 'no meta-data has hold.'
-                self.send_response(412)
-                self.send_header('Content-Type', 'text/plain')
-                self.send_header('Content-length', len(msg))
-                self.end_headers()
-                self.wfile.write(bytes(msg, 'utf-8'))
+                self.sendMsgRes(412, msg)
                 return
             meta_str = json.dumps(g_app.meta_dic)
             body = bytes(meta_str, 'utf-8')
@@ -127,7 +179,7 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
             return
 
         elif parsed_path.path == '/favicon.ico':
-            # ignore...
+            # ignore
             return
             
         elif parsed_path.path == '/quit':
@@ -145,25 +197,17 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
                     res_bin = response.read()
                 if res_bin.decode() != 'ok':
                     msg += ' (TB not stopped)'
-            self.send_response(200)
-            self.send_header('Content-Type', 'text/plain')
-            self.send_header('Content-length', len(msg))
-            self.end_headers()
-            self.wfile.write(bytes(msg, 'utf-8'))
+            self.sendMsgRes(200, msg)
             sys.exit(0)
 
         msg = 'invalid URL specified.'
-        self.send_response(404)
-        self.send_header('Content-Type', 'text/plain')
-        self.send_header('Content-length', len(msg))
-        self.end_headers()
-        self.wfile.write(bytes(msg, 'utf-8'))
+        self.sendMsgRes(404, msg)
         return
 
     def do_POST(self):
         ''' do_POST
         POSTメソッド用のリクエストハンドラー
-        要求されたパスが'/visualize'の場合はパラメータに従い可視化を行う。
+        要求されたパスが'/visualize'の場合はパラメータに従い可視化を行います。
         '''
         content_length = int(self.headers['content-length'])
         parsed_path = urlparse(self.path)
@@ -178,41 +222,36 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
                 visparam = req_dic['visparam']
             except:
                 msg = 'lack of required param.'
-                self.send_response(412)
-                self.send_header('Content-Type', 'text/plain')
-                self.send_header('Content-length', len(msg))
-                self.end_headers()
-                self.wfile.write(bytes(msg, 'utf-8'))
+                self.sendMsgRes(412, msg)
                 return
             if not vistype in {'isosurf'}:
                 msg = 'vistype not supported: {}'.format(vistype)
-                self.send_response(412)
-                self.send_header('Content-Type', 'text/plain')
-                self.send_header('Content-length', len(msg))
-                self.end_headers()
-                self.wfile.write(bytes(msg, 'utf-8'))
+                self.sendMsgRes(412, msg)
+                return
+            try:
+                isoval = float(visparam['value'])
+            except:
+                msg = 'visparam[value] access failed.'
+                self.sendMsgRes(412, msg)
                 return
 
-            # get data of step, and visualize
+            # get data of step, and do visualize
             sph_lst = g_app.getSPHdata(g_app.meta_dic['id'], step)
-            for s in sph_lst:
-                print(s._dims)
+            if len(sph_lst) < 1:
+                msg = 'can not get SPH data.'
+                self.sendMsgRes(412, msg)
+                return
+            if not g_app.generateIsosurf(isoval):
+                msg = 'generate isosurface(s) failed.'
+                self.sendMsgRes(412, msg)
+                return
             
         else:
             msg = 'invalid URL specified.'
-            self.send_response(404)
-            self.send_header('Content-Type', 'text/plain')
-            self.send_header('Content-length', len(msg))
-            self.end_headers()
-            self.wfile.write(bytes(msg, 'utf-8'))
+            self.sendMsgRes(404, msg)
             return
 
-        msg = 'ok'
-        self.send_response(200)
-        self.send_header('Content-Type', 'text/plain')
-        self.send_header('Content-length', len(msg))
-        self.end_headers()
-        self.wfile.write(bytes(msg, 'utf-8'))
+        self.sendMsgRes(200, 'ok')
         return
 
 
@@ -241,6 +280,7 @@ if __name__ == '__main__':
     # create TB2C_server and get metadata
     g_app = TB2C_server()
     g_app._div[:] = [args.dx, args.dy, args.dz]
+    g_app._out_dir = args.odir
     try:
         g_app.connectTB(args.tb)
     except Exception as e:

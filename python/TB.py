@@ -143,6 +143,11 @@ class TBReqHandler(SimpleHTTPRequestHandler):
     Temporal Buffer用のHTTPリクエストハンドラー実装クラスです。
     '''    
     def do_GET(self):
+        ''' do_GET
+        GETメソッド用のリクエストハンドラー
+        要求されたパスが'/'の場合はメタデータを返し、'/quit'の場合は終了します。
+        要求パスが'/data'の場合は、指定されたstepのデータを返します。
+        '''
         _cwd = os.getcwd()
         parsed_path = urlparse(self.path)
         if parsed_path.path == '/':

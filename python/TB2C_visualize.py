@@ -11,29 +11,49 @@ from SPH_isosurf import SPH_isosurf
 from math import log10
 
 class TB2C_visualize:
-    def __init__(self):
-        self._outDir = '.'
+    def __init__(self, outdir:str ='.'):
+        self._outDir = outdir
+        self._obj23dt_ver = None
+        self._doc = {
+            'asset':{
+                'version': '0.0',
+                'tilesetVersion': '1.0.0-obj23dtiles',
+                'gltfUpAxis': 'Z'
+            },
+            'geometricError': 500,
+            'root': {}
+        }
         return
+
+    def checkObj23dtiles(self):
+        if not self._obj23dt_ver:
+            try:
+                self._obj23dt_ver \
+                    = subprocess.check_output(['obj23dtiles', '--version'])
+            except:
+                return False
+        return True
 
     def checkB3dmDir(self) -> bool:
         b3dmDir = os.path.join(self._outDir, 'b3dm')
-        if os.makedirs(b3dmDir):
-            return True
-        if os.path.exists(b3dmDir):
-            if os.path.isdir(b3dmDir):
-                return True
-        return False
+        try:
+            os.makedirs(b3dmDir, exist_ok=True)
+        except:
+            return False
+        return True
 
     def createTileset(self, node_lst:[]) -> bool:
-        json_path = os.path.join(self._outDir, 'tileset.json')
-        try:
-            f = open(json_path, 'w')
-        except Exception as e:
-            return False
-        
+        pass
         
     def isosurf(self, sph_lst:[SPH.SPH], value:float, fnbase:str='isosurf') \
         -> bool:
+        ''' isosurf
+        sph_lstで渡されたSPHデータ群に対し、valueで指定された値で等値面を生成し、
+        OBJファイルに出力した後、obj23dtilesコマンドを使用して3D-Tilesに変換します。
+        self._out_dir配下に、以下のファイルが作成されます。
+          tileset.json
+          b3dm/fnbase_**.b3dm
+        '''
         if len(sph_lst) < 1:
             return False
         ndigit = int(log10(len(sph_lst)) +1)
@@ -86,6 +106,12 @@ class TB2C_visualize:
             continue # end of for(sph)
 
         # create tileset.json
+
+        json_path = os.path.join(self._outDir, 'tileset.json')
+        try:
+            f = open(json_path, 'w')
+        except Exception as e:
+            return False
         
         return True
     

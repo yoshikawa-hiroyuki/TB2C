@@ -1,16 +1,31 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""
+TB2C_client
+"""
 import sys, os
 import json
-import wx # need to install via pip3 (wxPython)
-import requests # need to install via pip3
+import urllib.request
+try:
+    import wx # need to install via pip3 (wxPython)
+except:
+    print('TB2C_client: Error: import wx failed, install wxPython.')
+    sys.exit(1)
 
 import canvas
 import uiPanel
 import uiDialog
 
 class TB2C_App(wx.App):
+    ''' TB2C_App
+    TB2C clientのプロトタイプAppクラスです。
+    wxPythonのAppクラスを継承しています。
+    '''
     def OnInit(self):
+        ''' OnInit
+        App初期化時のイベントハンドラー。
+        トップレベルのFrameを作成し、OpenGL canvasとUI panelを横方向に配置します。
+        '''
         self.SetVendorName('RIKEN')
         self.SetAppName('TB2C_client')
         self._metaDic = None
@@ -80,6 +95,15 @@ class TB2C_App(wx.App):
         sys.exit(0)
 
     def OnConnectTB2CSrv(self, evt):
+        ''' OnConnectTB2CSrv
+        'Connect to TB2C server'メニューのイベントハンドラー。
+        URL入力用のダイアログを表示し、TB2C serverに接続します。
+
+        Parameters
+        ----------
+        evt: wx.Event
+          メニューイベント
+        '''
         dlg = uiDialog.ConnectTB2CSrvDlg(self._tb2c_serv_url)
         res = dlg.ShowModal()
         if res != wx.ID_OK:
@@ -92,22 +116,43 @@ class TB2C_App(wx.App):
         return
 
     def OnConnectChOWDER(self, evt):
+        ''' OnConnectChOWDER
+        'Connect to ChOWDDER'メニューのイベントハンドラー。
+        URLおよびパスワード入力用のダイアログを表示し、ChOWDERに接続します。
+
+        Parameters
+        ----------
+        evt: wx.Event
+          メニューイベント
+        '''
         pass
 
     
     def connectTB2CSrv(self, url:str) -> bool:
+        ''' connectTB2CSrv
+        urlで指定されたTB2C serverへ接続し、メタデータを取得します。
+        取得したメタデータのチェック後、AppのUIに反映します。
+
+        Parameters
+        ----------
+        url: str
+          TB2C serverのURL
+
+        Returns
+        -------
+        bool: True=成功、False=失敗(self._lastErrにエラーメッセージを登録)
+        '''
         try:
-            res = requests.get(url)
+            with urllib.request.urlopen(url) as res:
+                res_bin = res.read()
+            res_str = res_bin.decode()
         except Exception as e:
             self._lastErr = str(e)
-            return False
-        if res.status_code != 200:
-            self._lastErr = res.text
             return False
         
         # load and check metadata
         try:
-            xdic = json.loads(res.text)
+            xdic = json.loads(res_str)
             if xdic['type'] != 'SPH' or \
                xdic['dims'][0]*xdic['dims'][1]*xdic['dims'][2] < 8 or \
                xdic['datalen'] < 1 or xdic['steps'] < 1 or \
@@ -148,6 +193,21 @@ class TB2C_App(wx.App):
         pass
 
     def connectChOWDER(self, hostnm:str, pswd:str) -> bool:
+        ''' connectChOWDER
+        hostnmで指定されたホスト上のChOWDER serverに接続します。
+
+        Parameters
+        ----------
+        hostnm: str
+          ChOWDER serverが動作するホスト(ホスト名またはIPアドレス)
+          接続先は'ws://{hostnm}/v2'となる。
+        pswd: str
+          ChOWDER serverに接続する際のAPIUserのパスワード
+
+        Returns
+        -------
+        bool: True=成功、False=失敗(self._lastErrにエラーメッセージを登録)
+        '''
         return True
 
     def requestChOWDER(self):
@@ -172,7 +232,7 @@ if __name__ == '__main__':
     app = TB2C_App()
     if args.s:
         if not app.connectTB2CSrv(args.s):
-            print('Error: {}'.format(app.lastError))
+            print('TB2C_client: Error: {}'.format(app.lastError))
             sys.exit(1)
     if args.c:
         app.connectChOWDER(args.c)
