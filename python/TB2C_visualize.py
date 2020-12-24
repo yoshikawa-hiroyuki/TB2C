@@ -7,25 +7,19 @@ import os, sys
 import json
 import subprocess
 from math import log10
-from collections import OrderedDict
+from collections import OrderedDict as OD
 
 from pySPH import SPH
 from SPH_isosurf import SPH_isosurf
+from SPH_filter import SPH_filter
+import tileset_tmpl
 
 
 class TB2C_visualize:
     def __init__(self, outdir:str ='.'):
         self._outDir = outdir
         self._obj23dt_ver = None
-        self._doc = OrderedDict({
-            'asset':OrderedDict({
-                'version': '0.0',
-                'tilesetVersion': '1.0.0-obj23dtiles',
-                'gltfUpAxis': 'Z'
-            }),
-            'geometricError': 500,
-            'root': OrderedDict({})
-        })
+        self._doc = tileset_tmpl._tmpl
         return
 
     def checkObj23dtiles(self):
@@ -44,6 +38,16 @@ class TB2C_visualize:
         except:
             return False
         return True
+
+    def bbox2Box(self, bbox:[[float],[float]]) -> [float]:
+        box = []
+        c = [(bbox[0][i]+bbox[1][i])*0.5 for i in range(3)]
+        hl = [(bbox[1][i]-bbox[0][i])*0.5 for i in range(3)]
+        box.append(c)
+        box.append([hl[0], 0.0, 0.0])
+        box.append([0.0, hl[1], 0.0])
+        box.append([0.0, 0.0, hl[2]])
+        return box
 
     def isosurf(self, sph_lst:[SPH.SPH], value:float, fnbase:str='isosurf') \
         -> bool:
@@ -66,11 +70,16 @@ class TB2C_visualize:
         for i in range(3):
             whole_bbox[1][i] = sph._org[i] + sph._pitch[i]*(sph._dims[i]-1)
 
-        nd_dic = []
+        root = seelf._doc['root']
+        root['children'] = []
         b3dmDir = os.path.join(self._outDir, 'b3dm')
         cnt = 0
         for sph in sph_lst:
-            v, f, n = SPH_isosurf.generate(sph, value)
+            if sph._veclen == 1:
+                xsph = sph
+            else:
+                xsph = SPH_filter.vectorMag(sph)
+            v, f, n = SPH_isosurf.generate(xsph, value)
             if len(f) < 1: continue
             # save objfile
             obj_path = os.path.join(b3dmDir, fnbase+'_{}.obj'. \
@@ -98,18 +107,20 @@ class TB2C_visualize:
             # remove objfile
 
             # add node dict
-            jd = json.loads("{'path':{}, 'bbox':{'min':{},'max':{}}}"\
-                            .format(b3dm_path, str(org), str(gro)))
-            nd_dic.append(jd)
+            node = tileset_tmpl.get_node()
+            node['boundingVolume']['box'] = self.bbox2Box([org, gro])
+            node['content']['uri'] = b3dm_path
+            root['children'].append(node)
             
             cnt += 1
             continue # end of for(sph)
 
         # create tileset.json
-        
+        root['boundingVolume']['box'] = self.bbox2Box(whole_bbox)
         json_path = os.path.join(self._outDir, 'tileset.json')
         try:
-            f = open(json_path, 'w')
+            with open(json_path, 'w') as f:
+                f.write(json.dumps(self._doc))
         except Exception as e:
             return False
         
