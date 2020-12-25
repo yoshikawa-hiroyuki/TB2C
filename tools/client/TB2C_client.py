@@ -5,11 +5,17 @@ TB2C_client
 """
 import sys, os
 import json
+import time
 import urllib.request
 try:
     import wx # need to install via pip3 (wxPython)
 except:
     print('TB2C_client: Error: import wx failed, install wxPython.')
+    sys.exit(1)
+try:
+    import chowder
+except:
+    print('TB2C_client: Error: import chowder failed, install websocket.')
     sys.exit(1)
 
 import canvas
@@ -32,7 +38,10 @@ class TB2C_App(wx.App):
         self._lastErr = None
 
         self._tb2c_serv_url = None
+
+        self._chowder = chowder.ChOWDER()
         self._chowder_host = None
+        self._chowder_loginkey = None
 
         # toplevel frame
         self._frame = wx.Frame(None, title='TB2C client', size=(800, 600))
@@ -109,7 +118,7 @@ class TB2C_App(wx.App):
         if res != wx.ID_OK:
             return
         if not self.connectTB2CSrv(dlg.url):
-            self.Message('connection to TB2C server failed.', err=True)
+            self.Message('connect to TB2C server failed.', err=True)
             return
         self.Message('connected to TB2C server: {}'.format(dlg.url))
         self._tb2c_serv_url = dlg.url
@@ -125,9 +134,17 @@ class TB2C_App(wx.App):
         evt: wx.Event
           メニューイベント
         '''
-        pass
+        dlg = uiDialog.ConnectChOWDERDlg(self._chowder_host)
+        res = dlg.ShowModal()
+        if res != wx.ID_OK:
+            return
+        host = dlg.host
+        pswd = dlg.password
+        if not self.connectChOWDER(host, pswd):
+            self.Message('connect to ChOWDER server failed.', err=True)
+        self.Message('connected to chOWDER server: {}'.format(host))
+        return
 
-    
     def connectTB2CSrv(self, url:str) -> bool:
         ''' connectTB2CSrv
         urlで指定されたTB2C serverへ接続し、メタデータを取得します。
@@ -208,6 +225,26 @@ class TB2C_App(wx.App):
         -------
         bool: True=成功、False=失敗(self._lastErrにエラーメッセージを登録)
         '''
+        if self._chowder.is_open:
+            self._chowder.disconnect()
+            #self._chowder.wait_until_close()
+        try:
+            self._chowder.connect(hostnm)
+        except Exception as e:
+            return False
+        
+        login_req = chowder.JSONRPC('Login')
+        login_req['params']['id'] = 'APIUser'
+        login_req['params']['password'] = pswd
+        def login_callback(err, result):
+            self._chowder_loginkey = result['loginkey']
+        self._chowder.send_json(login_req, login_callback)
+
+        import thumb_data
+        content_req = chowder.add3DTilesContent(self._chowder, thumb_data._data)
+        while not self._chowder.is_done(content_req):
+            time.sleep(0.05)
+        self._chowder_host = hostnm
         return True
 
     def requestChOWDER(self):

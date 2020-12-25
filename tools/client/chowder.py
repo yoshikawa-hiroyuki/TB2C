@@ -9,8 +9,8 @@ import threading
 import time
 import urllib
 
-CHOWDER_SERVER = 'ws://localhost/v2'
-API_USER_PASSWORD = 'password'
+CHOWDER_SERVER = 'ws://{}/v2'
+
 
 # JSONPRC用のdictを返す
 def JSONRPC(method, forBinary = False):
@@ -52,7 +52,7 @@ class ChOWDER:
 
     def _on_error(self):
         def func(ws, error):
-            print(error)
+            raise Exception(error)
         return func
 
     def _on_close(self):
@@ -66,9 +66,10 @@ class ChOWDER:
         return func
 
     # ChOWDERサーバに接続
-    def connect(self):
+    def connect(self, host):
         #websocket.enableTrace(True)
-        self.connection =  websocket.WebSocketApp(CHOWDER_SERVER,\
+        url = CHOWDER_SERVER.format(host)
+        self.connection =  websocket.WebSocketApp(url,\
                                     on_message=self._on_message(),\
                                     on_error=self._on_error(),\
                                     on_close=self._on_close(),
@@ -151,7 +152,8 @@ def add3DTilesContent(ch, image_data):
     
     def addwebgl_callback(ch):
         def func(err, result):
-            print(result)
+            #print(result)
+            pass
         return func
     
     ch.send_binary(content_req, image_data, addwebgl_callback(ch))
@@ -181,12 +183,14 @@ def update3DTilesContent(ch, id, update_id):
     content_req['params'] = [meta_data]
     def updatemeta_callback(ch):
         def func(err, result):
-            print(result)
+            #print(result)
+            pass
         return func
     ch.send_json(content_req, updatemeta_callback(ch))
     return content_req
 
 
+#-----------------------------------------------------------------------------
 # 試し
 def main():
     ch = ChOWDER()
@@ -197,7 +201,7 @@ def main():
     ### loginリクエスト
     login_req = JSONRPC('Login')
     login_req['params']['id'] = 'APIUser'
-    login_req['params']['password'] = API_USER_PASSWORD
+    login_req['params']['password'] = 'password'
     def login_callback(err, result):
         # 次回同じセッションにログインし直すためのキーが返ってくる 
         # id, passwordの代わりに key : loginKeyを入れると再ログイン可能
@@ -218,4 +222,5 @@ def main():
     ch.disconnect()
     ch.wait_until_close()
     
-main()
+if __name__ == '__main__':
+    main()
