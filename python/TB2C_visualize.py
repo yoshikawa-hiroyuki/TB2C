@@ -16,22 +16,42 @@ import tileset_tmpl
 
 
 class TB2C_visualize:
+    ''' TB2C_visualize:
+    TB2Cサーバ用の、可視化機能実装クラスです。
+    SPHデータに対する可視化(等値面生成)結果をジオメトリ(OBJ)ファイルに出力し、
+    obj23dtilesコマンドを使用して3D-Tilesに変換します。
+    '''
     def __init__(self, outdir:str ='.'):
         self._outDir = outdir
         self._obj23dt_ver = None
         self._doc = tileset_tmpl._tmpl
         return
 
-    def checkObj23dtiles(self):
+    def checkObj23dtiles(self) -> bool:
+        ''' checkObj23dtiles
+        "obj23dtiles --version"を実行し、正常に動作するか確認します。
+
+        Returns
+        -------
+        bool: True=成功、False=失敗
+        '''
         if not self._obj23dt_ver:
             try:
                 self._obj23dt_ver \
                     = subprocess.check_output(['obj23dtiles', '--version'])
             except:
+                self._obj23dt_ver = None
                 return False
         return True
 
     def checkB3dmDir(self) -> bool:
+        ''' checkB3dmDir
+        出力先ディレクトリ(self._outDir)配下に"b3dm"ディレクトリを作成します。
+
+        Returns
+        -------
+        bool: True=成功、False=失敗
+        '''
         b3dmDir = os.path.join(self._outDir, 'b3dm')
         try:
             os.makedirs(b3dmDir, exist_ok=True)
@@ -40,6 +60,18 @@ class TB2C_visualize:
         return True
 
     def bbox2Box(self, bbox:[[float],[float]]) -> [float]:
+        ''' bbox2Box
+        バウンディングボックスデータを、3D-Tileの"Box"形式に変換します。
+
+        Parameters
+        ----------
+        bbox: [[float],[float]]
+          バウンディングボックスデータ
+
+        Returns
+        -------
+        [float]: 3D-Tileの"Box"形式データ
+        '''
         box = []
         c = [(bbox[0][i]+bbox[1][i])*0.5 for i in range(3)]
         hl = [(bbox[1][i]-bbox[0][i])*0.5 for i in range(3)]
@@ -56,12 +88,27 @@ class TB2C_visualize:
         OBJファイルに出力した後、obj23dtilesコマンドを使用して3D-Tilesに変換します。
         self._out_dir配下に、以下のファイルが作成されます。
           tileset.json
-          b3dm/fnbase_**.b3dm
+          b3dm/fnbase_nnn.b3dm
+
+        Parameters
+        ----------
+        sph_lst: [SPH.SPH]
+          等値面を生成するSPHデータのリスト
+        value: float
+          等値面を生成する値
+        fnbase: str
+          等値面ファイルのベース名
+
+        Returns
+        -------
+        bool: True=成功、False=失敗
         '''
         if len(sph_lst) < 1:
             return False
         ndigit = int(log10(len(sph_lst)) +1)
         if not self.checkB3dmDir():
+            return False
+        if not self.checkObj23dtiles():
             return False
 
         whole_bbox = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
@@ -70,7 +117,7 @@ class TB2C_visualize:
         for i in range(3):
             whole_bbox[1][i] = sph._org[i] + sph._pitch[i]*(sph._dims[i]-1)
 
-        root = seelf._doc['root']
+        root = self._doc['root']
         root['children'] = []
         b3dmDir = os.path.join(self._outDir, 'b3dm')
         cnt = 0
@@ -99,14 +146,14 @@ class TB2C_visualize:
             except Exception as e:
                 continue
             # update whole_bbox
-            org = sph._org[i]
+            org = sph._org
             gro = [org[i] +sph._pitch[i]*(sph._dims[i]-1) for i in range(3)]
             for i in range(3):
                 if org[i] < whole_bbox[0][i]: whole_bbox[0][i] = org[i]
                 if gro[i] > whole_bbox[1][i]: whole_bbox[1][i] = gro[i]
             # remove objfile
 
-            # add node dict
+            # add node to root/children list
             node = tileset_tmpl.get_node()
             node['boundingVolume']['box'] = self.bbox2Box([org, gro])
             node['content']['uri'] = b3dm_path
@@ -123,6 +170,6 @@ class TB2C_visualize:
                 f.write(json.dumps(self._doc))
         except Exception as e:
             return False
-        
+
+        # done
         return True
-    
