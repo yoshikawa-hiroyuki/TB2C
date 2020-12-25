@@ -128,7 +128,7 @@ def add3DTilesContent(ch, image_data):
     tileLayer['id'] = '3dtiles_tb2c' # 他と被らないIDが必須
     tileLayer['type'] = '3dtile' # 必須
     tileLayer['visible'] = 'true' # 必須
-    tileLayer['url'] = 'http://localhost/itowns/Preset/tb2c/tileset.json'
+    ###tileLayer['url'] = 'http://localhost/itowns/Preset/tb2c/tileset.json'
     # chowder itowns appでの編集用パラメータ
     meta_data['layerList'] = json.dumps([tileLayer])
     #meta_data['cameraWorldMatrix'] = json.dumps([\

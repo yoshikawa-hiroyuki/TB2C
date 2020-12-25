@@ -231,6 +231,7 @@ class TB2C_App(wx.App):
         try:
             self._chowder.connect(hostnm)
         except Exception as e:
+            self._lastErr = str(e)
             return False
         
         login_req = chowder.JSONRPC('Login')
@@ -272,7 +273,14 @@ if __name__ == '__main__':
             print('TB2C_client: Error: {}'.format(app.lastError))
             sys.exit(1)
     if args.c:
-        app.connectChOWDER(args.c)
+        dlg = uiDialog.ConnectChOWDERDlg(args.c)
+        res = dlg.ShowModal()
+        if res == wx.ID_OK:
+            host = dlg.host
+            pswd = dlg.password
+            if not app.connectChOWDER(host, pswd):
+                print('TB2C_client: Error: connect to ChOWDER server failed.')
+                sys.exit(1)
 
     # event loop
     app.MainLoop()
