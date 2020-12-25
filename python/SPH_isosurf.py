@@ -13,7 +13,7 @@ from skimage import measure
 class SPH_isosurf:
 
     @staticmethod
-    def generate(d: SPH.SPH, value: float) -> ([], [], []):
+    def generate(d: SPH.SPH, value: float) -> ([float], [int], [float]):
         ''' generate
         スカラーのSPHデータに対して等値面を生成する(static method)
 
@@ -35,12 +35,15 @@ class SPH_isosurf:
             return (None, None, None)
         
         vol = d._data.reshape([d._dims[2], d._dims[1], d._dims[0]])
-        verts, faces, normals, values = measure.marching_cubes(vol, value)
+        spc = (d._pitch[2], d._pitch[1], d._pitch[0])
+        vv, faces, nv, _ = measure.marching_cubes(vol, value, spacing=spc)
+        verts = vv[:, [2,1,0]] + d._org
+        normals = nv[:, [2,1,0]]
 
         return (verts, faces, normals)
 
     @staticmethod
-    def saveOBJ(f: typing.IO, verts, faces, normals):
+    def saveOBJ(f: typing.IO, verts:[float], faces:[int], normals:[float]):
         ''' saveOBJ
         generateで生成された等値面をOBJファイルに出力する(static method)
 

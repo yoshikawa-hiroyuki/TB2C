@@ -12,7 +12,7 @@ class TB2C_UIPanel(wx.Panel):
         topSizer = wx.BoxSizer(wx.VERTICAL)
         
         # info textbox
-        self._infoTxt = wx.TextCtrl(self, size=wx.Size(-1, 100),
+        self._infoTxt = wx.TextCtrl(self, size=wx.Size(-1, 200),
                                     style=wx.TE_MULTILINE|wx.TE_READONLY)
         topSizer.Add(self._infoTxt, border=3, flag=wx.EXPAND|wx.ALL)
         self._infoTxt.SetValue('no data loaded.')

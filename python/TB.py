@@ -48,7 +48,7 @@ class TB(object):
         
         Returns
         -------
-        bool: True=成功、false=失敗
+        bool: True=成功、False=失敗
         '''
         # open and read JSON file
         try:
@@ -123,7 +123,7 @@ class TB(object):
 
         Returns
         -------
-        bool: True=成功、false=失敗
+        bool: True=成功、False=失敗
         '''
         # load SPH files
         if not self._tsdata.setupFiles(fnlist, basedir):
@@ -241,6 +241,21 @@ class TBReqHandler(SimpleHTTPRequestHandler):
         return
     
 
+def load_monitor(prog:str ='TB'):
+    global g_tb
+    while True:
+        sys.stdout.write('{}: loading: {} steps done\r'\
+                         .format(prog, g_tb._tsdata.numSteps))
+        time.sleep(0.5)
+        if not g_tb._tsdata.is_working:
+            break
+    if g_tb._tsdata.is_ready:
+        print('\n{}: loaded {} steps.'.format(prog, g_tb._tsdata.numSteps))
+    else:
+        print('{}: load failed: {}'.format(prog, g_tb._lastErr))
+    return
+   
+    
 def usage(prog:str ='TB'):
     print('usage: {} [-p port] [-j input.json | -l file0.sph file1.sph ...]'\
           .format(prog))
@@ -267,6 +282,8 @@ if __name__ == '__main__':
 
     # prepare Temporal Buffer
     g_tb = TB()
+
+    # invoke loading thread
     if args.j != None:
         tbt = threading.Thread(target=g_tb.loadFromJSON, args=([args.j]))
     else:
@@ -274,18 +291,16 @@ if __name__ == '__main__':
     tbt.setDaemon(True)
     tbt.start()
 
+    # prepare monitoring thread
+    lmt = threading.Thread(target=load_monitor, args=([prog]))
+    lmt.setDaemon(True)
+    lmt.start()
+
     while True:
-        sys.stdout.write('loading: {} steps done\r'\
-                         .format(g_tb._tsdata.numSteps))
-        time.sleep(0.5)
-        if not g_tb._tsdata.is_working:
+        if g_tb._tsdata.is_ready:
             break
-    tbt.join()
-    if g_tb._tsdata.is_ready:
-        print('\n{}: loaded {} steps.'.format(prog, g_tb._tsdata.numSteps))
-    else:
-        print('{}: load failed: {}'.format(prog, g_tb._lastErr))
-        sys.exit(1)
+        time.sleep(0.5)
+        continue
     
     # invoke HTTP server
     host = '0.0.0.0'
@@ -298,5 +313,7 @@ if __name__ == '__main__':
     print('{}: serving started at port#{}'.format(prog, port))
     httpd.serve_forever()
 
+    #tbt.join()
+    #lmt.join()
     sys.exit(0)
     

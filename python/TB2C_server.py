@@ -169,6 +169,14 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
                 msg = 'no meta-data has hold.'
                 self.sendMsgRes(412, msg)
                 return
+            qs = parse_qs(parsed_path.query)
+            if 'update' in qs:
+                try:
+                    g_app.connectTB(g_app._tb_uri)
+                except Exception as e:
+                    msg = 'update meta-data failed.'
+                    self.sendMsgRes(412, msg)
+                    return
             meta_str = json.dumps(g_app.meta_dic)
             body = bytes(meta_str, 'utf-8')
             self.send_response(200)
