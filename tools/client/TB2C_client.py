@@ -10,17 +10,24 @@ import urllib.request
 try:
     import wx # need to install via pip3 (wxPython)
 except:
-    print('TB2C_client: Error: import wx failed, install wxPython.')
+    print('TB2C_client: Error: import wx failed, install wxPython as:')
+    print('  pip3 install wxPython')
     sys.exit(1)
 try:
     import chowder
 except:
-    print('TB2C_client: Error: import chowder failed, install websocket.')
+    print('TB2C_client: Error: import chowder failed, install websocket as:')
+    print('  pip3 install websocket')
     sys.exit(1)
-
-import canvas
+try:
+    import canvas
+except:
+    print('TB2C_client: Error: import canvas failed, install PyOpenGL as:')
+    print('  pip3 install PyOpenGL')
+    sys.exit(1)
 import uiPanel
 import uiDialog
+
 
 class TB2C_App(wx.App):
     ''' TB2C_App
