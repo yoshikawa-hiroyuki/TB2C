@@ -75,10 +75,10 @@ class TB2C_visualize:
         box = []
         c = [(bbox[0][i]+bbox[1][i])*0.5 for i in range(3)]
         hl = [(bbox[1][i]-bbox[0][i])*0.5 for i in range(3)]
-        box.append(c)
-        box.append([hl[0], 0.0, 0.0])
-        box.append([0.0, hl[1], 0.0])
-        box.append([0.0, 0.0, hl[2]])
+        box.extend(c)
+        box.extend([hl[0], 0.0, 0.0])
+        box.extend([0.0, hl[1], 0.0])
+        box.extend([0.0, 0.0, hl[2]])
         return box
 
     def isosurf(self, sph_lst:[SPH.SPH], value:float, fnbase:str='isosurf') \
@@ -122,28 +122,36 @@ class TB2C_visualize:
         b3dmDir = os.path.join(self._outDir, 'b3dm')
         cnt = 0
         for sph in sph_lst:
+            # pathes
+            obj_path = os.path.join(b3dmDir, fnbase+'_{}.obj'. \
+                                    format(str(cnt).zfill(ndigit)))
+            b3dm_path0 = fnbase+'_{}.b3dm'.format(str(cnt).zfill(ndigit))
+            b3dm_path = os.path.join(b3dmDir, b3dm_path0)
+            # generate isosurface
             if sph._veclen == 1:
                 xsph = sph
             else:
                 xsph = SPH_filter.vectorMag(sph)
-            v, f, n = SPH_isosurf.generate(xsph, value)
-            if len(f) < 1: continue
+            try:
+                v, f, n = SPH_isosurf.generate(xsph, value)
+            except ValueError: # maybe empty
+                open(b3dm_path, 'wb').close()
+                cnt += 1
+                continue
             # save objfile
-            obj_path = os.path.join(b3dmDir, fnbase+'_{}.obj'. \
-                                    format(str(cnt).zfill(ndigit)))
             try:
                 obj_f = open(obj_path, 'w')
                 SPH_isosurf.saveOBJ(obj_f, v, f, n)
                 obj_f.close()
             except Exception as e:
+                cnt += 1
                 continue
             # convert to b3dm
-            b3dm_path = os.path.join(b3dmDir, fnbase+'_{}.b3dm'. \
-                                    format(str(cnt).zfill(ndigit)))
             try:
                 subprocess.call(['obj23dtiles', '--b3dm',
                                  '-i', obj_path, '-o', b3dm_path])
             except Exception as e:
+                cnt += 1
                 continue
             # update whole_bbox
             org = sph._org
@@ -156,7 +164,7 @@ class TB2C_visualize:
             # add node to root/children list
             node = tileset_tmpl.get_node()
             node['boundingVolume']['box'] = self.bbox2Box([org, gro])
-            node['content']['uri'] = b3dm_path
+            node['content']['uri'] = b3dm_path0
             root['children'].append(node)
             
             cnt += 1
@@ -167,7 +175,7 @@ class TB2C_visualize:
         json_path = os.path.join(self._outDir, 'tileset.json')
         try:
             with open(json_path, 'w') as f:
-                f.write(json.dumps(self._doc))
+                f.write(json.dumps(self._doc, indent=2))
         except Exception as e:
             return False
 

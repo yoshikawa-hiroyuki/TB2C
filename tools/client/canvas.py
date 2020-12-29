@@ -13,14 +13,18 @@ from bbox import BBox
 
 #----------------------------------------------------------------------
 
-class OGL_CanvasBase(glcanvas.GLCanvas):
-    def __init__(self, parent):
+class TB2C_Canvas(glcanvas.GLCanvas):
+    def __init__(self, parent, app):
         glcanvas.GLCanvas.__init__(self, parent, -1)
         self.context = glcanvas.GLContext(self)
+        self._app = app
 
         self._frustum = Frustum()
         self._trackball = Trackball()
         self._size = None
+
+        self._obj = BBox()
+        self._obj.fit(self._frustum)
 
         self._T = Mat4()
         self._R = Mat4()
@@ -39,6 +43,13 @@ class OGL_CanvasBase(glcanvas.GLCanvas):
         self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
 
+    def Getmatrix(self):
+        M = Mat4()
+        M = M * self._T
+        M = M * self._R
+        M = M * self._S
+        return M
+
     def OnSize(self, event):
         wx.CallAfter(self.DoSetViewport)
         event.Skip()
@@ -51,7 +62,7 @@ class OGL_CanvasBase(glcanvas.GLCanvas):
     def OnPaint(self, event):
         dc = wx.PaintDC(self)
         self.SetCurrent(self.context)
-        self.OnDraw()
+        self.Draw()
 
     def OnDoubleClick(self, evt):
         self._T.Identity()
@@ -68,6 +79,7 @@ class OGL_CanvasBase(glcanvas.GLCanvas):
     def OnMouseUp(self, evt):
         if self.HasCapture():
             self.ReleaseMouse()
+        self._app.updateRequest(self._app.REQ_UPDVIEW)
 
     def OnMouseMotion(self, evt):
         if evt.Dragging() and evt.LeftIsDown():
@@ -91,14 +103,6 @@ class OGL_CanvasBase(glcanvas.GLCanvas):
         self._S.Scale(1.0 + 0.1*rot)
         self.Refresh(False)
 
-
-class TB2C_Canvas(OGL_CanvasBase):
-    def __init__(self, parent, app):
-        OGL_CanvasBase.__init__(self, parent)
-        self._app = app
-        self._obj = BBox()
-        self._obj.fit(self._frustum)
-
     def setBoxSize(self, minpos, maxpos):
         self._obj._p0[:] = minpos[:]
         self._obj._p1[:] = maxpos[:]
@@ -106,7 +110,7 @@ class TB2C_Canvas(OGL_CanvasBase):
         self.Refresh(False)
         return
 
-    def OnDraw(self):
+    def Draw(self):
         if not self._size:
             self._size = self.GetClientSize()
         w, h = self._size

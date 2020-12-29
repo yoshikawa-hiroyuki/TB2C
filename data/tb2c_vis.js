@@ -16,7 +16,7 @@ window.onload = function() {
 
     // Create a new Layer 3d-tiles
     // -------------------------------------------
-    var $3dTilesLayerTB2C = new itowns.C3DTilesLayer('3d-tiles-tb2c', {
+    var $3dTilesLayerTB2C = new itowns.C3DTilesLayer('3dtiles_tb2c', {
         name: 'TB2C',
         source: new itowns.C3DTilesSource({
             url: 'tileset.json',

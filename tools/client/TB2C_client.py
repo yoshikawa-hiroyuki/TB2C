@@ -27,6 +27,8 @@ class TB2C_App(wx.App):
     TB2C clientのプロトタイプAppクラスです。
     wxPythonのAppクラスを継承しています。
     '''
+    REQ_NONE, REQ_UPDDATA, REQ_UPDVIEW = (0, 1, 2)
+    
     def OnInit(self):
         ''' OnInit
         App初期化時のイベントハンドラー。
@@ -47,6 +49,7 @@ class TB2C_App(wx.App):
         self._frame = wx.Frame(None, title='TB2C client', size=(800, 600))
         fileMenu = wx.Menu()
         menu_connTB2CSrv = fileMenu.Append(wx.ID_ANY, 'Connect to TB2C server')
+        fileMenu.AppendSeparator()
         menu_connChOWDER = fileMenu.Append(wx.ID_ANY, 'Connect to ChOWDER')
         fileMenu.AppendSeparator()
         menu_quit = fileMenu.Append(wx.ID_EXIT, 'Quit')
@@ -79,6 +82,24 @@ class TB2C_App(wx.App):
     @property
     def metaDic(self):
         return self._metaDic
+
+    @property
+    def stepIdx(self) -> int:
+        valStr = self._uiPanel._tsTxt.GetValue()
+        try:
+            val = int(valStr)
+        except:
+            val = 0
+        return val
+    
+    @property
+    def isoval(self) -> float:
+        valStr = self._uiPanel._isovalTxt.GetValue()
+        try:
+            val = float(valStr)
+        except:
+            val = self._app.metaDic['vrange'][0]
+        return val
     
     @property
     def lastError(self):
@@ -204,6 +225,8 @@ class TB2C_App(wx.App):
         
         self._metaDic = xdic
         self._tb2c_serv_url = url
+
+        self.updateRequest(TB2C_App.REQ_UPDDATA)
         return True
 
     def requestTB2CSrv(self):
@@ -246,11 +269,36 @@ class TB2C_App(wx.App):
         while not self._chowder.is_done(content_req):
             time.sleep(0.05)
         self._chowder_host = hostnm
+
+        self.updateRequest(TB2C_App.REQ_UPDVIEW)
         return True
 
     def requestChOWDER(self):
         pass
-    
+
+    def updateRequest(self, flag) -> bool:
+        if flag & TB2C_App.REQ_UPDDATA:
+            print('UPDATE DATA')
+            url = self._tb2c_serv_url + 'visualize'
+            data = {
+                'step': self.stepIdx,
+                'vistype': 'isosurf',
+                'visparam': {'value': self.isoval}
+            }
+            head = {'Content-Type': 'application/json'}
+            req = urllib.request.Request(url, json.dumps(data).encode(), head)
+            try:
+                with urllib.request.urlopen(req) as res:
+                    res_bin = res.read()
+                res_str = res_bin.decode()
+            except Exception as e:
+                self._lastErr = str(e)
+                return False
+        if flag & (TB2C_App.REQ_UPDDATA | TB2C_App.REQ_UPDVIEW):
+            print('UPDATE VIEW')
+            mat = self._canvas.Getmatrix()
+        return True
+         
 
 #-----------------------------------------------------------------------------
 if __name__ == '__main__':
