@@ -49,6 +49,7 @@ class TB2C_UIPanel(wx.Panel):
     def OnTsSlider(self, evt):
         val = self._tsSlider.GetValue()
         self._tsTxt.SetValue(str(val))
+        self._app.updateRequest(self._app.REQ_UPDDATA)
 
     def OnTsTxt(self, evt):
         valStr = self._tsTxt.GetValue()
@@ -65,6 +66,7 @@ class TB2C_UIPanel(wx.Panel):
             val = self._app.metaDic['steps']-1
             self._tsTxt.SetValue(str(val))
         self._tsSlider.SetValue(val)
+        self._app.updateRequest(self._app.REQ_UPDDATA)
 
     def OnIsovalSlider(self, evt):
         if not self._app.metaDic: return
@@ -72,6 +74,7 @@ class TB2C_UIPanel(wx.Panel):
         ival = self._isovalSlider.GetValue()
         val = self._app.metaDic['vrange'][0] + 0.01*ival*vd
         self._isovalTxt.SetValue('{:.6f}'.format(val))
+        self._app.updateRequest(self._app.REQ_UPDDATA)
 
     def OnIsovalTxt(self, evt):
         if not self._app.metaDic: return
@@ -92,6 +95,7 @@ class TB2C_UIPanel(wx.Panel):
             self._isovalTxt.SetValue('{:.6f}'.format(val))
         ival = int((val - self._app.metaDic['vrange'][0])*100/vd)
         self._isovalSlider.SetValue(ival)
+        self._app.updateRequest(self._app.REQ_UPDDATA)
 
     def setInformation(self, info:str):
         self._infoTxt.SetValue(info)
