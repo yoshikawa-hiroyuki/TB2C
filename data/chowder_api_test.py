@@ -121,12 +121,12 @@ def add3DTilesContent(ch, image_data):
     meta_data['height'] = 480
     meta_data['type'] = 'webgl'
     meta_data['visible'] = "true" # 登録直後から表示する場合
-    meta_data['url'] =  urllib.parse.unquote('itowns/Preset/tb2c/tb2c_vis.html')
+    meta_data['url'] =  urllib.parse.unquote('data/tb2c_vis.html')
     tileLayer = {}
     tileLayer['id'] = '3dtiles_tb2c' # 他と被らないIDが必須
     tileLayer['type'] = '3dtile' # 必須
     tileLayer['visible'] = 'true' # 必須
-    ###tileLayer['url'] = 'http://localhost/itowns/Preset/tb2c/tileset.json'
+    ###tileLayer['url'] = 'http://localhost/data/tileset.json'
     # chowder itowns appでの編集用パラメータ
     meta_data['layerList'] = json.dumps([tileLayer])
     #meta_data['cameraWorldMatrix'] = json.dumps([\

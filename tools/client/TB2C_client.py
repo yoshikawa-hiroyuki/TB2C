@@ -17,7 +17,7 @@ try:
     import chowder
 except:
     print('TB2C_client: Error: import chowder failed, install websocket as:')
-    print('  pip3 install websocket')
+    print('  pip3 install websocket-client')
     sys.exit(1)
 try:
     import canvas

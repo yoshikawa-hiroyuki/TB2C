@@ -154,6 +154,32 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(bytes(msg, 'utf-8'))
         return
+
+    def translate_path(self, path):
+        ''' translate_path
+        SimpleHTTPRequestHandler.translate_pathのオーバーロードメソッド。
+        SimpleHTTPRequestHandler.do_GETが呼ばれた際の、リクエストされたパスを
+        ファイルシステムのパスに変換する。
+        TB2C_server_ReqHandlerクラスでは、do_GETにおいてリクエストパスが
+        '/visualized/'で始まる場合のみ(super().do_GET()から)呼ばれ、
+        '/visualized/'までのパスをg_app.out_dirに置き換えて返す。
+
+        Parameters
+        ----------
+        path: str
+          リクエストパス
+
+        Returns
+        -------
+        str: 変換されたパス
+
+        '''
+        global g_app
+        path = super().translate_path(path)
+        base_path = os.path.join(os.getcwd(), 'visualized')
+        xpath = path.replace(base_path, os.path.abspath(g_app.out_dir))
+        print('xpath={}'.format(xpath))
+        return xpath
     
     def do_GET(self):
         ''' do_GET
@@ -188,6 +214,10 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
 
         elif parsed_path.path == '/favicon.ico':
             # ignore
+            return
+
+        elif parsed_path.path.startswith('/visualized/'):
+            super().do_GET()
             return
             
         elif parsed_path.path == '/quit':
@@ -303,7 +333,7 @@ if __name__ == '__main__':
     except Exception as e:
         print('{}: invoke httpd failed: {}'.format(prog, str(e)))
         sys.exit(1)
-    print('{}: started at port#{}'.format(prog, port))
+    print('{}: started at http://localhost:{}/'.format(prog, port))
     httpd.serve_forever()
 
     sys.exit(0)
