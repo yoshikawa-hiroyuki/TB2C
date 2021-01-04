@@ -9,6 +9,7 @@ import subprocess
 from math import log10
 from collections import OrderedDict as OD
 
+from utilMath import *
 from pySPH import SPH
 from SPH_isosurf import SPH_isosurf
 from SPH_filter import SPH_filter
@@ -81,8 +82,8 @@ class TB2C_visualize:
         box.extend([0.0, 0.0, hl[2]])
         return box
 
-    def isosurf(self, sph_lst:[SPH.SPH], value:float, fnbase:str='isosurf') \
-        -> bool:
+    def isosurf(self, sph_lst:[SPH.SPH], value:float, fnbase:str='isosurf',
+                fitmat =None) -> bool:
         ''' isosurf
         sph_lstで渡されたSPHデータ群に対し、valueで指定された値で等値面を生成し、
         OBJファイルに出力した後、obj23dtilesコマンドを使用して3D-Tilesに変換します。
@@ -98,6 +99,8 @@ class TB2C_visualize:
           等値面を生成する値
         fnbase: str
           等値面ファイルのベース名
+        fitmat:
+          fit操作用の幾何変換行列
 
         Returns
         -------
@@ -159,7 +162,7 @@ class TB2C_visualize:
             for i in range(3):
                 if org[i] < whole_bbox[0][i]: whole_bbox[0][i] = org[i]
                 if gro[i] > whole_bbox[1][i]: whole_bbox[1][i] = gro[i]
-            # remove objfile
+                # remove objfile
             os.remove(obj_path)
 
             # add node to root/children list
@@ -171,6 +174,15 @@ class TB2C_visualize:
             cnt += 1
             continue # end of for(sph)
 
+        # override 'transform' of root
+        if fitmat:
+            mat0 = Mat4([1.0, 0.0, 0.0, 0.0,
+                         0.0, 1.0, 0.0, 0.0,
+                         0.0, 0.0, 1.0, 0.0,
+                         6378137.0, 0.0, 0.0, 1.0])
+            mat = mat0 * Mat4(fitmat)
+            root['transform'] = mat.m_v.tolist()
+        
         # create tileset.json
         root['boundingVolume']['box'] = self.bbox2Box(whole_bbox)
         json_path = os.path.join(self._outDir, 'tileset.json')

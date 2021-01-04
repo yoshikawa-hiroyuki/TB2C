@@ -17,6 +17,11 @@ class BBox:
         self._S = Mat4()
         self._mode = BBox.MODE_FACE_WIRE
 
+    @property
+    def matrix(self):
+        m = self._T * self._S
+        return m
+
     def draw(self):
         # apply local matrices
         glPushMatrix()

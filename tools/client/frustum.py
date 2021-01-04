@@ -6,7 +6,7 @@ from utilMath import *
 (CYCLOP, LEFT_EYE, RIGHT_EYE) = range(3)
 
 EPSF = 1e-6
-
+DIST = 100.0
 
 #----------------------------------------------------------------------
 class Frustum(object):
@@ -26,13 +26,13 @@ class Frustum(object):
     
     def __init__(self):
         self._eyeType = CYCLOP
-        self._eye = Vec3((0.0, 0.0, 6.0))
+        self._eye = Vec3((0.0, 0.0, DIST))
         self._eyeOff = Vec3()
-        self._dist = 6.0
-        self._halfW = 6.0
-        self._halfH = 6.0
+        self._dist = DIST
+        self._halfW = DIST
+        self._halfH = DIST
         self._near = 0.5
-        self._far = 500.5
+        self._far = 1000.5
         self._hpr = Vec3()
 
     def ApplyProjection(self, ortho =False, asp =1.0):

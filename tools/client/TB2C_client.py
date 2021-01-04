@@ -290,7 +290,8 @@ class TB2C_App(wx.App):
             data = {
                 'step': self.stepIdx,
                 'vistype': 'isosurf',
-                'visparam': {'value': self.isoval}
+                'visparam': {'value': self.isoval},
+                'fitmat': self._canvas.GetFitMatrix().m_v.tolist()
             }
             head = {'Content-Type': 'application/json'}
             req = urllib.request.Request(url, json.dumps(data).encode(), head)
