@@ -62,7 +62,7 @@
         },
         "geometricError": 0,
         "content": {
-          "uri": "isosurf_0.b3dm"
+          "uri": "b3dm/isosurf_0.b3dm"
         }
       },
       {
@@ -84,7 +84,7 @@
         },
         "geometricError": 0,
         "content": {
-          "uri": "isosurf_1.b3dm"
+          "uri": "b3dm/isosurf_1.b3dm"
         }
       },
       {
@@ -106,7 +106,7 @@
         },
         "geometricError": 0,
         "content": {
-          "uri": "isosurf_2.b3dm"
+          "uri": "b3dm/isosurf_2.b3dm"
         }
       },
       {
@@ -128,7 +128,7 @@
         },
         "geometricError": 0,
         "content": {
-          "uri": "isosurf_3.b3dm"
+          "uri": "b3dm/isosurf_3.b3dm"
         }
       }
     ]

@@ -165,7 +165,7 @@ class TB2C_visualize:
             # add node to root/children list
             node = tileset_tmpl.get_node()
             node['boundingVolume']['box'] = self.bbox2Box([org, gro])
-            node['content']['uri'] = b3dm_path0
+            node['content']['uri'] = os.path.join('b3dm', b3dm_path0)
             root['children'].append(node)
             
             cnt += 1
