@@ -160,6 +160,7 @@ class TB2C_visualize:
                 if org[i] < whole_bbox[0][i]: whole_bbox[0][i] = org[i]
                 if gro[i] > whole_bbox[1][i]: whole_bbox[1][i] = gro[i]
             # remove objfile
+            os.remove(obj_path)
 
             # add node to root/children list
             node = tileset_tmpl.get_node()

@@ -66,6 +66,7 @@ class TSDataSPH(TSData):
             fn = fnlist[idx]
             if basedir and len(basedir) > 0:
                 fn = os.path.join(basedir, fn)
+            sph = SPH.SPH()
             if not sph.load(fn):
                 self.reset()
                 return False
