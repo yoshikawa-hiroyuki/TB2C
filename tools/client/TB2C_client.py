@@ -236,9 +236,6 @@ class TB2C_App(wx.App):
         self.updateRequest(TB2C_App.REQ_UPDDATA)
         return True
 
-    def requestTB2CSrv(self):
-        pass
-
     def connectChOWDER(self, hostnm:str, pswd:str) -> bool:
         ''' connectChOWDER
         hostnmで指定されたホスト上のChOWDER serverに接続します。
@@ -280,11 +277,11 @@ class TB2C_App(wx.App):
         self.updateRequest(TB2C_App.REQ_UPDVIEW)
         return True
 
-    def requestChOWDER(self):
-        pass
-
     def updateRequest(self, flag) -> bool:
         if flag & TB2C_App.REQ_UPDDATA:
+            if not self._tb2c_serv_url:
+                self._lastErr = 'not connected to TB2C server'
+                return False
             print('UPDATE DATA')
             url = self._tb2c_serv_url + 'visualize'
             data = {
@@ -302,6 +299,9 @@ class TB2C_App(wx.App):
                 self._lastErr = str(e)
                 return False
         if flag & (TB2C_App.REQ_UPDDATA | TB2C_App.REQ_UPDVIEW):
+            if not self._chowder_host:
+                self._lastErr = 'not connected to ChOWDER'
+                return False
             print('UPDATE VIEW')
             mat = self._canvas.Getmatrix()
         return True
