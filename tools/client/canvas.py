@@ -14,6 +14,10 @@ from bbox import BBox
 #----------------------------------------------------------------------
 
 class TB2C_Canvas(glcanvas.GLCanvas):
+    ''' TB2C_Canvas
+    TB2C clientのOpenGL表示用キャンバスクラスです。
+    wxPythonのGLCanvasクラスを継承しており、マウスイベント用のハンドラが実装されています。
+    '''
     def __init__(self, parent, app):
         glcanvas.GLCanvas.__init__(self, parent, -1)
         self.context = glcanvas.GLContext(self)
@@ -49,6 +53,9 @@ class TB2C_Canvas(glcanvas.GLCanvas):
         M = M * self._R
         M = M * self._S
         return M
+
+    def GetFitMatrix(self):
+        return self._obj.matrix
 
     def OnSize(self, event):
         wx.CallAfter(self.DoSetViewport)

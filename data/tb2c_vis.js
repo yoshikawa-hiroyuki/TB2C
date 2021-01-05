@@ -4,7 +4,7 @@ window.onload = function() {
     var placement = {
         coord: new itowns.Coordinates('EPSG:4326', 0.0, 0.0, 0),
         range: 200,
-        tilt: 89.9,
+        tilt: 89.5,
         heading: 0.0
     }
     // iTowns namespace defined here
