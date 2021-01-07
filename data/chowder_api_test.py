@@ -168,7 +168,7 @@ def update3DTilesContent(ch, id, update_id):
     tileLayer['id'] = '3dtiles_tb2c' # 他と被らないIDが必須
     tileLayer['type'] = '3dtile' # 必須
     tileLayer['visible'] = 'true' # 必須
-    tileLayer['url'] = 'http://localhost/itowns/Preset/tb2c/tileset.json'
+    ###tileLayer['url'] = 'http://localhost/itowns/Preset/tb2c/tileset.json'
 
     # 前回と違うupdate_id（任意の文字列）を入れると、全く同じURLでも再読み込みされる
     if update_id != None:
@@ -176,7 +176,39 @@ def update3DTilesContent(ch, id, update_id):
 
     # chowder itowns appでの編集用パラメータ
     meta_data['layerList'] = json.dumps([tileLayer])
+
+    meta_data['cameraWorldMatrix'] = json.dumps([\
+        1.0, 0.0, 0.0, 0,\
+        0.0, 1.0, 0.0, 0,\
+        0.0, 0.0, 1.0, 0,\
+        0.0, 0.0, 50.0,\
+        1\
+    ])
+
     # UpdateMetaDataはリスト形式でmetadataを入れる必要があります（複数同時更新に対応）
+    content_req['params'] = [meta_data]
+    def updatemeta_callback(ch):
+        def func(err, result):
+            print(result)
+        return func
+    ch.send_json(content_req, updatemeta_callback(ch))
+    return content_req
+
+def updateCamera(ch, id):
+    # idと、更新したいパラメータを入れる
+    # 指定されていないパラメータは無視される（更新されない
+    content_req = JSONRPC('UpdateMetaData')
+    meta_data = {}
+    meta_data['id'] = id
+    meta_data['cameraWorldMatrix'] = json.dumps([\
+        1, 0, 0, 0,\
+        0, 1, 0, 0,\
+        0, 0, 1, 0,\
+        0.0,\
+        0.0,\
+        0.0,\
+        1\
+    ])
     content_req['params'] = [meta_data]
     def updatemeta_callback(ch):
         def func(err, result):
@@ -210,10 +242,17 @@ def main():
     ### webglコンテンツ登録
     print("\nCall add3DTilesContent")
     content_req = add3DTilesContent(ch, image_data)
+    update_target_id = content_req['params']['id']
 
     # コンテンツ追加完了待ち
     while not ch.is_done(content_req):
         time.sleep(0.05)
+
+    # カメラ更新
+    #time.sleep(5)
+    #print("\n updateCamera")
+    #content_req = updateCamera(ch, update_target_id)
+    
     ch.disconnect()
     ch.wait_until_close()
     
