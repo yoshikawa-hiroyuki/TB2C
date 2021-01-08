@@ -22,6 +22,7 @@ class TB2C_server:
     TB2C serverのプロトタイプ実装クラスです。
     '''
     def __init__(self):
+        self._vis = None
         self._meta_dic = None
         self._tb_uri = None
         self._div = [1, 1, 1]
@@ -111,7 +112,7 @@ class TB2C_server:
         self._last_step = stp
         return self._last_sph_list
 
-    def generateIsosurf(self, value:float, fitmat =None) -> bool:
+    def generateIsosurf(self, value:float) -> bool:
         ''' generateIsosurf
         現在保持しているSPHデータに対し、valueで指定された値で等値面を生成し、
         3D-Tiles形式のファイルに出力します。
@@ -120,8 +121,6 @@ class TB2C_server:
         ----------
         value: float
           等値面を生成する値
-        fitmat:
-          fit操作用の幾何変換行列
 
         Returns
         -------
@@ -129,8 +128,9 @@ class TB2C_server:
         '''
         if self._last_step < 0:
             return False
-        vis = TB2C_visualize.TB2C_visualize(self._out_dir)
-        if not vis.isosurf(self._last_sph_list, value, fitmat=fitmat):
+        self._vis = TB2C_visualize.TB2C_visualize(self._out_dir,
+                                                  self._meta_dic['bbox'])
+        if not self._vis.isosurf(self._last_sph_list, value):
             return False
         return True
 
@@ -274,10 +274,6 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
                 msg = 'visparam[value] access failed.'
                 self.sendMsgRes(412, msg)
                 return
-            try:
-                fitmat = req_dic['fitmat']
-            except:
-                fitmat = None
 
             # get data of step, and do visualize
             sph_lst = g_app.getSPHdata(g_app.meta_dic['id'], step)
@@ -285,7 +281,7 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
                 msg = 'can not get SPH data.'
                 self.sendMsgRes(412, msg)
                 return
-            if not g_app.generateIsosurf(isoval, fitmat):
+            if not g_app.generateIsosurf(isoval):
                 msg = 'generate isosurface(s) failed.'
                 self.sendMsgRes(412, msg)
                 return
@@ -295,7 +291,14 @@ class TB2C_server_ReqHandler(SimpleHTTPRequestHandler):
             self.sendMsgRes(404, msg)
             return
 
-        self.sendMsgRes(200, 'ok')
+        # ok
+        meta_str = json.dumps(g_app._vis._layerList)
+        body = bytes(meta_str, 'utf-8')
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.send_header('Content-length', len(body))
+        self.end_headers()
+        self.wfile.write(body)
         return
 
 
