@@ -297,10 +297,12 @@ if __name__ == '__main__':
     lmt.start()
 
     while True:
-        if g_tb._tsdata.is_ready:
+        if not g_tb._tsdata.is_working:
             break
         time.sleep(0.5)
         continue
+    if g_tb._tsdata.is_ready:
+        sys.exit(1)
     
     # invoke HTTP server
     host = '0.0.0.0'

@@ -278,6 +278,7 @@ class TB2C_App(wx.App):
         return True
 
     def updateRequest(self, flag) -> bool:
+        layerList = None
         if flag & TB2C_App.REQ_UPDDATA:
             if not self._tb2c_serv_url:
                 self._lastErr = 'not connected to TB2C server'
@@ -287,8 +288,7 @@ class TB2C_App(wx.App):
             data = {
                 'step': self.stepIdx,
                 'vistype': 'isosurf',
-                'visparam': {'value': self.isoval},
-                'fitmat': self._canvas.GetFitMatrix().m_v.tolist()
+                'visparam': {'value': self.isoval}
             }
             head = {'Content-Type': 'application/json'}
             req = urllib.request.Request(url, json.dumps(data).encode(), head)
@@ -296,6 +296,7 @@ class TB2C_App(wx.App):
                 with urllib.request.urlopen(req) as res:
                     res_bin = res.read()
                 res_str = res_bin.decode()
+                layerList = json.loads(res_str)
             except Exception as e:
                 self._lastErr = str(e)
                 return False

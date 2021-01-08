@@ -14,12 +14,14 @@ class BBox:
         self._p0 = Vec3(minpos)
         self._p1 = Vec3(maxpos)
         self._T = Mat4()
+        self._R = Mat4() #; self._R.RotX(-Deg2Rad(90.0))
         self._S = Mat4()
         self._mode = BBox.MODE_FACE_WIRE
 
     @property
     def matrix(self):
-        m = self._T * self._S
+        m = self._T * self._R
+        m = m * self._S
         return m
 
     def draw(self):

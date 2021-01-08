@@ -4,6 +4,7 @@
 TB2C_visualize
 """
 import os, sys
+import shutil
 import json
 import subprocess
 from math import log10
@@ -13,7 +14,8 @@ from utilMath import *
 from pySPH import SPH
 from SPH_isosurf import SPH_isosurf
 from SPH_filter import SPH_filter
-import tileset_tmpl
+
+LONG = 6378137.0
 
 
 class TB2C_visualize:
@@ -22,10 +24,11 @@ class TB2C_visualize:
     SPHデータに対する可視化(等値面生成)結果をジオメトリ(OBJ)ファイルに出力し、
     obj23dtilesコマンドを使用して3D-Tilesに変換します。
     '''
-    def __init__(self, outdir:str ='.'):
+    def __init__(self, outdir:str ='.', bbox =[[0,0,0],[1,1,1]]):
         self._outDir = outdir
         self._obj23dt_ver = None
-        self._doc = tileset_tmpl._tmpl
+        self._layerList = []
+        self._bbox = [Vec3(bbox[0]), Vec3(bbox[1])]
         return
 
     def checkObj23dtiles(self) -> bool:
@@ -47,7 +50,8 @@ class TB2C_visualize:
 
     def checkB3dmDir(self) -> bool:
         ''' checkB3dmDir
-        出力先ディレクトリ(self._outDir)配下に"b3dm"ディレクトリを作成します。
+        出力先ディレクトリ(self._outDir)配下に"b3dm"ディレクトリを
+        (存在すれば削除してから)作成します。
 
         Returns
         -------
@@ -55,7 +59,11 @@ class TB2C_visualize:
         '''
         b3dmDir = os.path.join(self._outDir, 'b3dm')
         try:
-            os.makedirs(b3dmDir, exist_ok=True)
+            if os.path.isfile(b3dmDir):
+                os.remove(b3dmDir)
+            elif os.path.isdir(b3dmDir):
+                shutil.rmtree(b3dmDir)
+            os.makedirs(b3dmDir)
         except:
             return False
         return True
@@ -82,14 +90,14 @@ class TB2C_visualize:
         box.extend([0.0, 0.0, hl[2]])
         return box
 
-    def isosurf(self, sph_lst:[SPH.SPH], value:float, fnbase:str='isosurf',
-                fitmat =None) -> bool:
+    def isosurf(self, sph_lst:[SPH.SPH], value:float,
+                fnbase:str='isosurf') -> bool:
         ''' isosurf
         sph_lstで渡されたSPHデータ群に対し、valueで指定された値で等値面を生成し、
         OBJファイルに出力した後、obj23dtilesコマンドを使用して3D-Tilesに変換します。
         self._out_dir配下に、以下のファイルが作成されます。
-          tileset.json
-          b3dm/fnbase_nnn.b3dm
+          b3dm/Batchedfnbase_nnn/fnbase_nnn.b3dm
+          b3dm/Batchedfnbase_nnn/tileset.json
 
         Parameters
         ----------
@@ -98,9 +106,7 @@ class TB2C_visualize:
         value: float
           等値面を生成する値
         fnbase: str
-          等値面ファイルのベース名
-        fitmat:
-          fit操作用の幾何変換行列
+          等値面ファイルのベース名(省略時:"isosurf")
 
         Returns
         -------
@@ -114,22 +120,20 @@ class TB2C_visualize:
         if not self.checkObj23dtiles():
             return False
 
-        whole_bbox = [[0.0, 0.0, 0.0], [0.0, 0.0, 0.0]]
-        sph = sph_lst[0]
-        whole_bbox[0][:] = sph._org[:]
-        for i in range(3):
-            whole_bbox[1][i] = sph._org[i] + sph._pitch[i]*(sph._dims[i]-1)
-
-        root = self._doc['root']
-        root['children'] = []
+        whole_bbox = self._bbox
+        bblen = (whole_bbox[1] - whole_bbox[0]).__abs__()
+        scale = LONG * 2 / bblen / 1.732 if bblen > 1e-8 else 1.0
+        centr = (whole_bbox[1] + whole_bbox[0]) * 0.5
+        trans = centr * (-scale)
+        
+        self._layerList = []
         b3dmDir = os.path.join(self._outDir, 'b3dm')
         cnt = 0
         for sph in sph_lst:
             # pathes
-            obj_path = os.path.join(b3dmDir, fnbase+'_{}.obj'. \
-                                    format(str(cnt).zfill(ndigit)))
-            b3dm_path0 = fnbase+'_{}.b3dm'.format(str(cnt).zfill(ndigit))
-            b3dm_path = os.path.join(b3dmDir, b3dm_path0)
+            path_base = fnbase+'_{}'.format(str(cnt).zfill(ndigit))
+            obj_path = os.path.join(b3dmDir, path_base + '.obj')
+            ts_path = os.path.join(b3dmDir, 'Batched'+path_base, 'tileset.json')
             # generate isosurface
             if sph._veclen == 1:
                 xsph = sph
@@ -138,9 +142,11 @@ class TB2C_visualize:
             try:
                 v, f, n = SPH_isosurf.generate(xsph, value)
             except ValueError: # maybe empty
-                open(b3dm_path, 'wb').close()
                 cnt += 1
                 continue
+            # normalize vertices
+            v = v * scale
+            v = v + trans.m_v
             # save objfile
             try:
                 obj_f = open(obj_path, 'w')
@@ -150,47 +156,46 @@ class TB2C_visualize:
                 cnt += 1
                 continue
             # convert to b3dm
+            print('exec: obj23dtiles --tileset -i {} ... '\
+                  .format(obj_path), end='')
+            sys.stdout.flush()
             try:
-                subprocess.call(['obj23dtiles', '--b3dm',
-                                 '-i', obj_path, '-o', b3dm_path])
+                subprocess.call(['obj23dtiles', '--tileset', '-i', obj_path])
             except Exception as e:
                 cnt += 1
                 continue
-            # update whole_bbox
-            org = sph._org
-            gro = [org[i] +sph._pitch[i]*(sph._dims[i]-1) for i in range(3)]
-            for i in range(3):
-                if org[i] < whole_bbox[0][i]: whole_bbox[0][i] = org[i]
-                if gro[i] > whole_bbox[1][i]: whole_bbox[1][i] = gro[i]
-                # remove objfile
+            # remove objfile
             os.remove(obj_path)
 
-            # add node to root/children list
-            node = tileset_tmpl.get_node()
-            node['boundingVolume']['box'] = self.bbox2Box([org, gro])
-            node['content']['uri'] = os.path.join('b3dm', b3dm_path0)
-            root['children'].append(node)
+            # modify tileset.json
+            try:
+                ts_f = open(ts_path, 'r')
+                ts_dict = json.load(ts_f, object_pairs_hook=OD)
+                ts_f.close()
+            except Exception as e:
+                cnt += 1
+                continue
+            ts_dict['asset']['gltfUpAxis'] = 'Z'
+            ts_dict['root']['transform'] = [
+                1, 0, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1]
+            try:
+                ts_f = open(ts_path, 'w')
+                json.dump(ts_dict, ts_f, indent=4)
+                ts_f.close()
+            except Exception as e:
+                cnt += 1
+                continue
+
+            # add tileLayer to layerList
+            tileLayer = {}
+            tileLayer['id'] = path_base
+            tileLayer['type'] = '3dtile'
+            tileLayer['visible'] = 'true'
+            tileLayer['url'] = 'http://localhost/data/' + ts_path
+            self._layerList.append(tileLayer)
             
             cnt += 1
             continue # end of for(sph)
-
-        # override 'transform' of root
-        if fitmat:
-            mat0 = Mat4([1.0, 0.0, 0.0, 0.0,
-                         0.0, 1.0, 0.0, 0.0,
-                         0.0, 0.0, 1.0, 0.0,
-                         6378137.0, 0.0, 0.0, 1.0])
-            mat = mat0 * Mat4(fitmat)
-            root['transform'] = mat.m_v.tolist()
-        
-        # create tileset.json
-        root['boundingVolume']['box'] = self.bbox2Box(whole_bbox)
-        json_path = os.path.join(self._outDir, 'tileset.json')
-        try:
-            with open(json_path, 'w') as f:
-                f.write(json.dumps(self._doc, indent=2))
-        except Exception as e:
-            return False
 
         # done
         return True
