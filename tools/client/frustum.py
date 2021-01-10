@@ -172,8 +172,9 @@ class Frustum(object):
                    Rv[1], Uv[1], Cv[1], 0,
                    Rv[2], Uv[2], Cv[2], 0,
                    0, 0, 0, 1))
-        ME = Mat4(); ME.Translate(self._eye*(-1))
-        MM = MM * ME
+        MM[12] = - self._eye * Rv
+        MM[13] = - self._eye * Uv
+        MM[14] = - self._eye * Cv
         return MM
 
     def GetEye(self):

@@ -51,6 +51,7 @@ class TB2C_App(wx.App):
         self._chowder = chowder.ChOWDER()
         self._chowder_host = None
         self._chowder_loginkey = None
+        self._chowder_id = None
 
         # toplevel frame
         self._frame = wx.Frame(None, title='TB2C client', size=(800, 600))
@@ -116,6 +117,16 @@ class TB2C_App(wx.App):
         return ret
 
     def Message(self, msg:str, err:bool=False):
+        ''' Message
+        msgをMessageDialogに表示します。
+
+        Parameters
+        ----------
+        msg: str
+          メッセージ文字列
+        err: bool
+          MessageDialogのアイコンをエラーアイコンにするかどうか
+        '''
         if err:
             dlg = wx.MessageDialog(self._frame, msg, 'Error',
                                    wx.OK|wx.ICON_EXCLAMATION)
@@ -254,6 +265,8 @@ class TB2C_App(wx.App):
         '''
         if self._chowder.is_open:
             self._chowder.disconnect()
+            self._chowder_host = None
+            self._chowder_id = None
             #self._chowder.wait_until_close()
         try:
             self._chowder.connect(hostnm)
@@ -269,21 +282,41 @@ class TB2C_App(wx.App):
         self._chowder.send_json(login_req, login_callback)
 
         import thumb_data
-        content_req = chowder.add3DTilesContent(self._chowder, thumb_data._data)
+        content_req = chowder.add3DTilesContent(self._chowder, [],
+                                                thumb_data._data)
         while not self._chowder.is_done(content_req):
             time.sleep(0.05)
         self._chowder_host = hostnm
+        self._chowder_id = content_req['params']['id']
 
-        self.updateRequest(TB2C_App.REQ_UPDVIEW)
+        self.updateRequest(TB2C_App.REQ_UPDDATA)
         return True
 
     def updateRequest(self, flag) -> bool:
+        ''' updateRequest
+        データ更新処理を行います。
+        flagのTB2C_App.REQ_UPDDATAビットがONの場合は、TB2Cサーバに等値面の再作成を
+        依頼し、ChOWDERに表示更新を依頼します。これは、タイムステップまたは等値面の値が
+        変更された場合にコールされます。
+        flagのTB2C_App.REQ_UPDVIEWビットがONの場合は、ChOWDERへの表示更新依頼のみを
+        行います。これは視界が変更された場合にコールされます。
+
+        Parameters
+        ----------
+        flag: int
+          更新要求フラグ
+
+        Returns
+        -------
+        bool: True=成功、False=失敗(self._lastErrにエラーメッセージを登録)
+        '''
         layerList = None
         if flag & TB2C_App.REQ_UPDDATA:
             if not self._tb2c_serv_url:
                 self._lastErr = 'not connected to TB2C server'
                 return False
             print('UPDATE DATA')
+            # request TB2C_server to visualize
             url = self._tb2c_serv_url + 'visualize'
             data = {
                 'step': self.stepIdx,
@@ -300,12 +333,25 @@ class TB2C_App(wx.App):
             except Exception as e:
                 self._lastErr = str(e)
                 return False
+            # request ChOWDER to update 3d-tiles data
+            if self._chowder_host and self._chowder_id:
+                content_req = chowder.update3DTilesContent(self._chowder,
+                                                           self._chowder_id,
+                                                           layerList)
+                while not self._chowder.is_done(content_req):
+                    time.sleep(0.05)
+                
         if flag & (TB2C_App.REQ_UPDDATA | TB2C_App.REQ_UPDVIEW):
-            if not self._chowder_host:
+            if not self._chowder_host or not self._chowder_id:
                 self._lastErr = 'not connected to ChOWDER'
                 return False
             print('UPDATE VIEW')
-            mat = self._canvas.Getmatrix()
+            CM = self._canvas.Getmatrix()
+            content_req = chowder.updateCamera(self._chowder, self._chowder_id,
+                                               CM.m_v.tolist())
+            while not self._chowder.is_done(content_req):
+                time.sleep(0.05)
+        
         return True
          
 

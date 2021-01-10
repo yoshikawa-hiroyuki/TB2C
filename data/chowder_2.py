@@ -143,7 +143,7 @@ def updateCamera(ch, id):
     return content_req
 
 
-def add3DTilesContent(ch, image_data):
+def add3DTilesContent(ch, image_data, update_id='000'):
     content_req = JSONRPC('AddContent')
     meta_data = {}
     meta_data['id'] = 'my3dtilecontent'
@@ -154,32 +154,13 @@ def add3DTilesContent(ch, image_data):
     meta_data['type'] = 'webgl'
     meta_data['visible'] = "true" # 登録直後から表示する場合
     meta_data['url'] =  urllib.parse.unquote('itowns/Preset/cartesian/cartesian.html')
-    tileLayer0 = {}
-    tileLayer0['id'] = 'isosurf_0' # 他と被らないIDが必須
-    tileLayer0['type'] = '3dtile' # 必須
-    tileLayer0['visible'] = 'true' # 必須
-    tileLayer0['url'] = 'http://localhost/data/b3dm/Batchedisosurf_0/tileset.json'
-    tileLayer0['sseThreshold'] = 0
-    tileLayer1 = {}
-    tileLayer1['id'] = 'isosurf_1' # 他と被らないIDが必須
-    tileLayer1['type'] = '3dtile' # 必須
-    tileLayer1['visible'] = 'true' # 必須
-    tileLayer1['url'] = 'http://localhost/data/b3dm/Batchedisosurf_1/tileset.json'
-    tileLayer1['sseThreshold'] = 0
-    tileLayer2 = {}
-    tileLayer2['id'] = 'isosurf_2' # 他と被らないIDが必須
-    tileLayer2['type'] = '3dtile' # 必須
-    tileLayer2['visible'] = 'true' # 必須
-    tileLayer2['url'] = 'http://localhost/data/b3dm/Batchedisosurf_2/tileset.json'
-    tileLayer2['sseThreshold'] = 0
-    tileLayer3 = {}
-    tileLayer3['id'] = 'isosurf_3' # 他と被らないIDが必須
-    tileLayer3['type'] = '3dtile' # 必須
-    tileLayer3['visible'] = 'true' # 必須
-    tileLayer3['url'] = 'http://localhost/data/b3dm/Batchedisosurf_3/tileset.json'
-    tileLayer3['sseThreshold'] = 0
-    # chowder itowns appでの編集用パラメータ
-    meta_data['layerList'] = json.dumps([tileLayer0, tileLayer1, tileLayer2, tileLayer3])
+    #meta_data['cameraWorldMatrix'] = json.dumps([ \
+    #    0.0, 0.0, 1.0, 0.0, \
+    #    1.0, 0.0, 0.0, 0.0, \
+    #    0.0, 1.0, 0.0, 0.0, \
+    #    0.0, 0.0, -6378237.0, 1.0 \
+    #])
+
     # カメラパラメータ
     cparam = {}
     cparam['fovy'] = 45
@@ -190,6 +171,26 @@ def add3DTilesContent(ch, image_data):
     cparam['filmGauge'] = 35
     cparam['aspect'] = 640.0 / 480.0
     meta_data['cameraParams'] = json.dumps(cparam)
+
+    tileLayer0 = {}
+    tileLayer0['id'] = 'isosurf_0' # 他と被らないIDが必須
+    tileLayer0['type'] = '3dtile' # 必須
+    tileLayer0['visible'] = 'true' # 必須
+    tileLayer0['url'] = 'http://localhost/data/b3dm/Batchedisosurf_0/tileset.json'
+    tileLayer0['sseThreshold'] = 0
+    tileLayer0['update_id'] = update_id
+
+    tileLayer1 = {}
+    tileLayer1['id'] = 'isosurf_1' # 他と被らないIDが必須
+    tileLayer1['type'] = '3dtile' # 必須
+    tileLayer1['visible'] = 'true' # 必須
+    tileLayer1['url'] = 'http://localhost/data/b3dm/Batchedisosurf_1/tileset.json'
+    tileLayer1['sseThreshold'] = 0
+    tileLayer1['update_id'] = update_id
+
+    # chowder itowns appでの編集用パラメータ
+    meta_data['layerList'] = json.dumps([tileLayer0, tileLayer1])
+    
     content_req['params'] = meta_data
     
     def addwebgl_callback(ch):
@@ -206,17 +207,24 @@ def update3DTilesContent(ch, id, update_id):
     meta_data = {}
     meta_data['id'] = id
     meta_data['type'] = 'webgl'
-    tileLayer = {}
-    tileLayer['id'] = '3dtiles_test' # 他と被らないIDが必須
-    tileLayer['type'] = '3dtile' # 必須
-    tileLayer['visible'] = 'true' # 必須
-    tileLayer['url'] = 'http://localhost/data/Test/tileset.json'
+    tileLayer2 = {}
+    tileLayer2['id'] = 'isosurf_2' # 他と被らないIDが必須
+    tileLayer2['type'] = '3dtile' # 必須
+    tileLayer2['visible'] = 'true' # 必須
+    tileLayer2['url'] = 'http://localhost/data/b3dm/Batchedisosurf_2/tileset.json'
+    tileLayer2['sseThreshold'] = 0
+    tileLayer2['update_id'] = update_id
 
-    # 前回と違うupdate_id（任意の文字列）を入れると、全く同じURLでも再読み込みされるようにした
-    if update_id != None:
-        tileLayer['update_id'] = update_id
+    tileLayer3 = {}
+    tileLayer3['id'] = 'isosurf_3' # 他と被らないIDが必須
+    tileLayer3['type'] = '3dtile' # 必須
+    tileLayer3['visible'] = 'true' # 必須
+    tileLayer3['url'] = 'http://localhost/data/b3dm/Batchedisosurf_3/tileset.json'
+    tileLayer3['sseThreshold'] = 0
+    tileLayer3['update_id'] = update_id
 
-    meta_data['layerList'] = json.dumps([tileLayer]) # chowder itowns appでの編集用パラメータ
+    meta_data['layerList'] = json.dumps([tileLayer2, tileLayer3]) # chowder itowns appでの編集用パラメータ
+
     content_req['params'] = [meta_data] # UpdateMetaDataはリスト形式でmetadataを入れる必要があります（複数同時更新に対応）
     def updatemeta_callback(ch):
         def func(err, result):
@@ -225,17 +233,46 @@ def update3DTilesContent(ch, id, update_id):
     ch.send_json(content_req, updatemeta_callback(ch))
     return content_req
 
-def update3DTilesContent2(ch, id):
+def update3DTilesContent2(ch, id, update_id):
     content_req = JSONRPC('UpdateMetaData')
     meta_data = {}
     meta_data['id'] = id
     meta_data['type'] = 'webgl'
-    tileLayer = {}
-    tileLayer['id'] = '3dtiles_test' # 他と被らないIDが必須
-    tileLayer['type'] = '3dtile' # 必須
-    tileLayer['visible'] = 'true' # 必須
-    tileLayer['url'] = 'http://localhost/data/Test/tileset.json'
-    meta_data['layerList'] = json.dumps([tileLayer]) # chowder itowns appでの編集用パラメータ
+
+    tileLayer0 = {}
+    tileLayer0['id'] = 'isosurf_0' # 他と被らないIDが必須
+    tileLayer0['type'] = '3dtile' # 必須
+    tileLayer0['visible'] = 'true' # 必須
+    tileLayer0['url'] = 'http://localhost/data/b3dm/Batchedisosurf_0/tileset.json'
+    tileLayer0['sseThreshold'] = 0
+    tileLayer0['update_id'] = update_id
+
+    tileLayer1 = {}
+    tileLayer1['id'] = 'isosurf_1' # 他と被らないIDが必須
+    tileLayer1['type'] = '3dtile' # 必須
+    tileLayer1['visible'] = 'true' # 必須
+    tileLayer1['url'] = 'http://localhost/data/b3dm/Batchedisosurf_1/tileset.json'
+    tileLayer1['sseThreshold'] = 0
+    tileLayer1['update_id'] = update_id
+
+    tileLayer2 = {}
+    tileLayer2['id'] = 'isosurf_2' # 他と被らないIDが必須
+    tileLayer2['type'] = '3dtile' # 必須
+    tileLayer2['visible'] = 'true' # 必須
+    tileLayer2['url'] = 'http://localhost/data/b3dm/Batchedisosurf_2/tileset.json'
+    tileLayer2['sseThreshold'] = 0
+    tileLayer2['update_id'] = update_id
+
+    tileLayer3 = {}
+    tileLayer3['id'] = 'isosurf_3' # 他と被らないIDが必須
+    tileLayer3['type'] = '3dtile' # 必須
+    tileLayer3['visible'] = 'true' # 必須
+    tileLayer3['url'] = 'http://localhost/data/b3dm/Batchedisosurf_3/tileset.json'
+    tileLayer3['sseThreshold'] = 0
+    tileLayer3['update_id'] = update_id
+
+    meta_data['layerList'] = json.dumps([tileLayer0, tileLayer1, tileLayer2, tileLayer3]) # chowder itowns appでの編集用パラメータ
+    
     content_req['params'] = [meta_data] # UpdateMetaDataはリスト形式でmetadataを入れる必要があります（複数同時更新に対応）
     def updatemeta_callback(ch):
         def func(err, result):
@@ -273,6 +310,7 @@ def hello():
     while not ch.is_done(content_req):
         time.sleep(0.01)
 
+    sys.exit(0)
     ### 5秒待つ
     time.sleep(5)
 
@@ -295,20 +333,18 @@ def hello():
     # メタデータ更新完了待ち
     while not ch.is_done(content_req):
         time.sleep(0.01)
-        
+
     time.sleep(5)
 
-    # 別のURLのデータを読み込み
+    # 同じURLのデータを再読み込み(update_idの変更による更新)
     print("\n update3DTilesContent2")
-    content_req = update3DTilesContent2(ch, update_target_id)
+    content_req = update3DTilesContent2(ch, update_target_id, 'bbb')
 
     # メタデータ更新完了待ち
     while not ch.is_done(content_req):
         time.sleep(0.01)
 
-    time.sleep(5)
-
-
+        
     ch.disconnect()
     ch.wait_until_close()
     
