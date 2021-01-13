@@ -22,15 +22,15 @@ class Frustum(object):
     """
 
     def __init__(self):
-        self.resetEye()
-        self._dist = DIST
+        self._dist = DIST * 2
         self._halfW = DIST
         self._halfH = DIST
-        self._near = DIST/10
-        self._far = DIST*2
+        self._near = DIST / 10
+        self._far = DIST * 5
+        self.resetEye()
 
     def resetEye(self):
-        self._eye = Vec3((DIST, 0.0, 0.0))
+        self._eye = Vec3((self._dist, 0.0, 0.0))
         self._view = Vec3((-1, 0, 0))
         self._up = Vec3((0, 0, 1))
 
@@ -177,17 +177,18 @@ class Frustum(object):
         MM[14] = - self._eye * Cv
         return MM
 
-    def GetEye(self):
+    def GetChOWDERMatrix(self):
         """
-        視点位置を返す
+        ChOWDER用のカメラ変換行列を返す
         """
-        return self._eye
-
-    def GetViewDirMVM(self):
-        """
-        視線方向ベクトルを返す
-        """
-        MM = GetMVM()
-        eye = MM * Vec3((0, 0, 0))
-        vdir = MM * Vec3((-1, 0, 0)) - eye
-        return vdir
+        Zv = self._view * (-1)
+        Xv = self._up.cross(Zv)
+        Yv = Zv.cross(Xv)
+        Tv = self._eye
+        MM = Mat4((Xv[0], Xv[1], Xv[2], 0,
+                   Yv[0], Yv[1], Yv[2], 0,
+                   Zv[0], Zv[1], Zv[2], 0,
+                   Tv[0], Tv[1], Tv[2], 1))
+        return MM
+    
+                   

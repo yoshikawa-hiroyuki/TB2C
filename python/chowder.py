@@ -139,7 +139,8 @@ def add3DTilesContent(ch, layerList:[], image_data):
 
     def addwebgl_callback(ch):
         def func(err, result):
-            print(result)
+            pass
+            #print(result)
         return func
     ch.send_binary(content_req, image_data, addwebgl_callback(ch))
     return content_req
@@ -161,7 +162,8 @@ def update3DTilesContent(ch, id, layerList:[]):
 
     def updatemeta_callback(ch):
         def func(err, result):
-            print(result)
+            pass
+            #print(result)
         return func
     ch.send_json(content_req, updatemeta_callback(ch))
     return content_req
@@ -176,7 +178,8 @@ def updateCamera(ch, id, cmat):
 
     def updatemeta_callback(ch):
         def func(err, result):
-            print(result)
+            pass
+            #print(result)
         return func
     ch.send_json(content_req, updatemeta_callback(ch))
     return content_req

@@ -42,7 +42,7 @@ class TB2C_Canvas(glcanvas.GLCanvas):
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
 
     def Getmatrix(self):
-        M = self._frustum.GetMVM()
+        M = self._frustum.GetChOWDERMatrix()
         return M
 
     def GetFitMatrix(self):
@@ -96,9 +96,11 @@ class TB2C_Canvas(glcanvas.GLCanvas):
 
     def OnMouseWheel(self, evt):
         rot = evt.GetWheelRotation() / evt.GetWheelDelta()
-        tz = rot * 0.01*self._frustum._dist
+        tz = rot * 0.02*self._frustum._dist
         self._frustum.trans(0, 0, tz)
         self.Refresh(False)
+        self._app.updateRequest(self._app.REQ_UPDVIEW)
+        return
 
     def setBoxSize(self, minpos, maxpos):
         self._obj._p0[:] = minpos[:]

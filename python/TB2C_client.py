@@ -315,7 +315,7 @@ class TB2C_App(wx.App):
             if not self._tb2c_serv_url:
                 self._lastErr = 'not connected to TB2C server'
                 return False
-            print('UPDATE DATA')
+            #print('UPDATE DATA')
             # request TB2C_server to visualize
             url = self._tb2c_serv_url + 'visualize'
             data = {
@@ -345,7 +345,7 @@ class TB2C_App(wx.App):
             if not self._chowder_host or not self._chowder_id:
                 self._lastErr = 'not connected to ChOWDER'
                 return False
-            print('UPDATE VIEW')
+            #print('UPDATE VIEW')
             CM = self._canvas.Getmatrix()
             content_req = chowder.updateCamera(self._chowder, self._chowder_id,
                                                CM.m_v.tolist())

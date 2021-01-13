@@ -141,7 +141,7 @@ class TB2C_visualize:
                 xsph = SPH_filter.vectorMag(sph)
             try:
                 v, f, n = SPH_isosurf.generate(xsph, value)
-            except ValueError: # maybe empty
+            except Exception as e: # maybe empty
                 cnt += 1
                 continue
             # normalize vertices
