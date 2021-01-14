@@ -343,7 +343,10 @@ if __name__ == '__main__':
         print('{}: invoke httpd failed: {}'.format(prog, str(e)))
         sys.exit(1)
     print('{}: started at http://localhost:{}/'.format(prog, port))
-    httpd.serve_forever()
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        sys.exit(0)
 
     sys.exit(0)
     
