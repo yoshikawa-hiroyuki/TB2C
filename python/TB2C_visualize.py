@@ -134,6 +134,7 @@ class TB2C_visualize:
             path_base = fnbase+'_{}'.format(str(cnt).zfill(ndigit))
             obj_path = os.path.join(b3dmDir, path_base + '.obj')
             ts_path = os.path.join(b3dmDir, 'Batched'+path_base, 'tileset.json')
+            ts_rpath = os.path.join('b3dm', 'Batched'+path_base, 'tileset.json')
             # generate isosurface
             if sph._veclen == 1:
                 xsph = sph
@@ -191,7 +192,7 @@ class TB2C_visualize:
             tileLayer['id'] = path_base
             tileLayer['type'] = '3dtile'
             tileLayer['visible'] = 'true'
-            tileLayer['url'] = 'http://localhost/data/' + ts_path
+            tileLayer['url'] = 'http://localhost/data/' + ts_rpath
             self._layerList.append(tileLayer)
             
             cnt += 1
