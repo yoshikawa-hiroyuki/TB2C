@@ -61,7 +61,8 @@ class TB(object):
         # check 'basedir' and 'filelist' key
         basedir = '.'
         if 'basedir' in jf.keys():
-            basedir = jf['basedir']
+            json_dir = os.path.dirname(json_path)
+            basedir = os.path.join(json_dir, jf['basedir'])
         try:
             flist = jf['filelist']
         except KeyError:

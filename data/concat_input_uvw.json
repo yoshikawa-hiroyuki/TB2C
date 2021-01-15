@@ -1,5 +1,5 @@
 {
-  "basedir": "/Users/yoh/Works/Vtools/data/obstacle",
+  "basedir": "obstacle",
   "filelist": [
       {"file": "uvw_001.sph", "step": "001"},
       {"file": "uvw_002.sph", "step": "002"},
