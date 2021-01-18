@@ -362,7 +362,7 @@ if __name__ == '__main__':
 
     # parse argv
     parser = argparse.ArgumentParser(description='TB2C client',
-      usage='%(prog)s {-s http://localhost:4000/} {-c localhost}')
+      usage='%(prog)s [-s http://localhost:4000/] [-c localhost]')
     parser.add_argument('-s', help='URL of TB2C_server to connect',
                         type=str, default=None)
     parser.add_argument('-c', help='hostname|IP address of ChOWDER server',
