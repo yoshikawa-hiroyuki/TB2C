@@ -7,12 +7,18 @@ TSData represents time-series data
 import threading
 
 class TSData:
+    ''' TSData
+    時系列データファイル群を扱うクラスです。
+    '''
     def __init__(self) -> None:
         self._evt = threading.Event()
         self.reset()
         return
 
     def reset(self) -> None:
+        '''
+        初期化
+        '''
         self._ready = False
         self._dtype = None
         self._stepList = []
@@ -82,6 +88,18 @@ class TSData:
         return 0
 
     def convStepToIdx(self, stp):
+        ''' convStepToIdx
+        時系列データのタイムステップ番号からタイムステップインデックス番号に変換します。
+
+        Parameters
+        ----------
+        stp: int
+          タイムステップ番号
+
+        Returns
+        -------
+        int: タイムステップインデックス番号
+        '''
         if not self.is_ready:
             return -1
         if stp < self._stepList[0]:
@@ -94,6 +112,18 @@ class TSData:
         return i - 1
     
     def getDataIdx(self, stpIdx):
+        ''' getDataIdx
+        stpIdxで指定されたタイムステップインデックス番号のデータを返します。
+
+        Parameters
+        ----------
+        stpIdx: int
+          タイムステップインデックス番号
+
+        Returns
+        -------
+        object: データ
+        '''
         if not self.is_ready:
             return None
         if stpIdx < 0 or stpIdx >= self.numSteps:
@@ -101,6 +131,18 @@ class TSData:
         return self._dataList[stpIdx]
 
     def getDataStp(self, stp):
+        ''' getDataStp
+        stpIdxで指定されたタイムステップ番号のデータを返します。
+
+        Parameters
+        ----------
+        stp: int
+          タイムステップ番号
+
+        Returns
+        -------
+        object: データ
+        '''
         stpIdx = self.convStepToIdx(stp)
         return self.getDataIdx(stpIdx)
     

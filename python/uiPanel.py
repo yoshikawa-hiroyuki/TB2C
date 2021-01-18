@@ -47,11 +47,27 @@ class TB2C_UIPanel(wx.Panel):
         return
 
     def OnTsSlider(self, evt):
+        ''' OnTsSlider
+        タイムステップスライダー操作に対するイベントハンドラーです。
+
+        Parameters
+        ----------
+        evt: wx.Event
+          スライダーイベント
+        '''
         val = self._tsSlider.GetValue()
         self._tsTxt.SetValue(str(val))
         self._app.updateRequest(self._app.REQ_UPDDATA)
 
     def OnTsTxt(self, evt):
+        ''' OnTsTxt
+        タイムステップテキストボックス入力に対するイベントハンドラーです。
+
+        Parameters
+        ----------
+        evt: wx.Event
+          テキストボックス入力イベント
+        '''
         valStr = self._tsTxt.GetValue()
         try:
             val = int(valStr)
@@ -69,6 +85,14 @@ class TB2C_UIPanel(wx.Panel):
         self._app.updateRequest(self._app.REQ_UPDDATA)
 
     def OnIsovalSlider(self, evt):
+        ''' OnIsovalSlider
+        等値面の値スライダー操作に対するイベントハンドラーです。
+
+        Parameters
+        ----------
+        evt: wx.Event
+          スライダーイベント
+        '''
         if not self._app.metaDic: return
         vd = self._app.metaDic['vrange'][1] - self._app.metaDic['vrange'][0]
         ival = self._isovalSlider.GetValue()
@@ -77,6 +101,14 @@ class TB2C_UIPanel(wx.Panel):
         self._app.updateRequest(self._app.REQ_UPDDATA)
 
     def OnIsovalTxt(self, evt):
+        ''' OnIsovalTxt
+        等値面の値テキストボックス入力に対するイベントハンドラーです。
+
+        Parameters
+        ----------
+        evt: wx.Event
+          テキストボックス入力イベント
+        '''
         if not self._app.metaDic: return
         vd = self._app.metaDic['vrange'][1] - self._app.metaDic['vrange'][0]
         valStr = self._isovalTxt.GetValue()
@@ -98,9 +130,25 @@ class TB2C_UIPanel(wx.Panel):
         self._app.updateRequest(self._app.REQ_UPDDATA)
 
     def setInformation(self, info:str):
+        ''' setInformation
+        情報表示欄の表示内容設定。
+
+        Parameters
+        ----------
+        info: str
+          表示内容
+        '''
         self._infoTxt.SetValue(info)
 
     def setTimeStepRange(self, steps:int) -> bool:
+        ''' setTimeStepRange
+        タイムステップ数の設定。
+
+        Parameters
+        ----------
+        steps: int
+          タイムステップ数
+        '''
         if steps < 1:
             return False
         self._tsSlider.SetMin(0)
@@ -110,6 +158,14 @@ class TB2C_UIPanel(wx.Panel):
         return True
 
     def setValueRange(self, vrange:[]) -> bool:
+        ''' setValueRange
+        データ値域の設定。
+
+        Parameters
+        ----------
+        vrange: [float]
+          データ値域
+        '''
         vd = vrange[1] - vrange[0]
         if vd <= 0.0:
             return False
@@ -117,12 +173,6 @@ class TB2C_UIPanel(wx.Panel):
         val = (vrange[0] + vrange[1]) * 0.5
         self._isovalTxt.SetValue('{:.6f}'.format(val))
         return True
-
-    def timeStepChanged(self, val:int):
-        print('step={}'.format(val))
-
-    def isovalChanged(self, val:float):
-        print('isoval={}'.format(val))
 
 #-------------------------------------
 if __name__ == '__main__':

@@ -12,11 +12,17 @@ from pySPH import SPH
 from typing import Iterable
 
 class TSDataSPH(TSData):
+    ''' TSDataSPH
+    時系列SPHファイル群を扱うクラスです。
+    '''
     def __init__(self) -> None:
         super().__init__()
         return
 
     def reset(self) -> None:
+        '''
+        初期化
+        '''
         super().reset()
         self._dtype = 'SPH'
         self._dims = [0, 0, 0]
@@ -27,6 +33,20 @@ class TSDataSPH(TSData):
         return self._dims
     
     def setupFiles(self, fnlist: Iterable, basedir: str ='.') -> bool:
+        ''' setupFiles
+        SPHファイルエントリーのリストからクラスパラメータを設定します。
+
+        Parameters
+        ----------
+        fnlist: [{}]
+          SPHファイルエントリーのリスト
+        basedir: str
+          SPHファイルが存在するディレクトリ(省略時は'.')
+
+        Returns
+        -------
+        bool: True=成功、False=失敗
+        '''
         self.reset()
         self._evt.set()
         

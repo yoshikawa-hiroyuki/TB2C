@@ -346,7 +346,7 @@ class TB2C_App(wx.App):
                 self._lastErr = 'not connected to ChOWDER'
                 return False
             #print('UPDATE VIEW')
-            CM = self._canvas.Getmatrix()
+            CM = self._canvas.GetMatrix()
             content_req = chowder.updateCamera(self._chowder, self._chowder_id,
                                                CM.m_v.tolist())
             while not self._chowder.is_done(content_req):

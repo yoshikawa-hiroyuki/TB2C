@@ -41,14 +41,36 @@ class TB2C_Canvas(glcanvas.GLCanvas):
         self.Bind(wx.EVT_MOTION, self.OnMouseMotion)
         self.Bind(wx.EVT_MOUSEWHEEL, self.OnMouseWheel)
 
-    def Getmatrix(self):
+    def GetMatrix(self):
+        ''' GetMatrix
+        カメラの変換行列を返ます。
+
+        Returns
+        -------
+        Mat4: カメラ変換行列
+        '''
         M = self._frustum.GetChOWDERMatrix()
         return M
 
     def GetFitMatrix(self):
+        ''' GetFitMatrix
+        オブジェクトを視界にフィットさせる変換行列を返ます。
+
+        Returns
+        -------
+        Mat4: 変換行列
+        '''
         return self._obj.matrix
 
     def OnSize(self, event):
+        ''' OnSize
+        キャンバスサイズの変更に対するイベントハンドラーです。ビューポート変更を行います。
+
+        Parameters
+        ----------
+        evt: wx.Event
+          サイズイベント
+        '''
         wx.CallAfter(self.DoSetViewport)
         event.Skip()
 
@@ -58,25 +80,65 @@ class TB2C_Canvas(glcanvas.GLCanvas):
         glViewport(0, 0, size.width, size.height)
 
     def OnPaint(self, event):
+        ''' OnPaint
+        再描画に対するイベントハンドラーです。描画処理を行います。
+
+        Parameters
+        ----------
+        evt: wx.Event
+          再描画イベント
+        '''
         dc = wx.PaintDC(self)
         self.SetCurrent(self.context)
         self.Draw()
 
     def OnDoubleClick(self, evt):
+        ''' OnDoubleClick
+        ダブルクリックに対するイベントハンドラーです。視界のリセットを行います。
+
+        Parameters
+        ----------
+        evt: wx.Event
+          マウスイベント
+        '''
         self._frustum.resetEye()
         self.Refresh(False)
         return
 
     def OnMouseDown(self, evt):
+        ''' OnMouseDown
+        マウスボタン押下に対するイベントハンドラーです。
+
+        Parameters
+        ----------
+        evt: wx.Event
+          マウスイベント
+        '''
         self.CaptureMouse()
         self.x, self.y = self.lastx, self.lasty = evt.GetPosition()
 
     def OnMouseUp(self, evt):
+        ''' OnMouseUp
+        マウスボタンリリースに対するイベントハンドラーです。
+
+        Parameters
+        ----------
+        evt: wx.Event
+          マウスイベント
+        '''
         if self.HasCapture():
             self.ReleaseMouse()
         self._app.updateRequest(self._app.REQ_UPDVIEW)
 
     def OnMouseMotion(self, evt):
+        ''' OnMouseMotion
+        マウス移動に対するイベントハンドラーです。
+
+        Parameters
+        ----------
+        evt: wx.Event
+          マウスイベント
+        '''
         if evt.Dragging() and evt.LeftIsDown():
             self.lastx, self.lasty = self.x, self.y
             self.x, self.y = evt.GetPosition()
@@ -95,6 +157,14 @@ class TB2C_Canvas(glcanvas.GLCanvas):
             self.Refresh(False)
 
     def OnMouseWheel(self, evt):
+        ''' OnMouseWheel
+        マウスホイール回転に対するイベントハンドラーです。
+
+        Parameters
+        ----------
+        evt: wx.Event
+          マウスイベント
+        '''
         rot = evt.GetWheelRotation() / evt.GetWheelDelta()
         tz = rot * 0.02*self._frustum._dist
         self._frustum.trans(0, 0, tz)
@@ -103,6 +173,16 @@ class TB2C_Canvas(glcanvas.GLCanvas):
         return
 
     def setBoxSize(self, minpos, maxpos):
+        ''' setBoxSize
+        表示オブジェクトのバウンディングボックスサイズを設定します。
+
+        Parameters
+        ----------
+        evtminpos: [float]
+          最小座標値
+        evtmaxpos: [float]
+          最大座標値
+        '''
         self._obj._p0[:] = minpos[:]
         self._obj._p1[:] = maxpos[:]
         self._obj.fit(self._frustum)
@@ -110,6 +190,9 @@ class TB2C_Canvas(glcanvas.GLCanvas):
         return
 
     def Draw(self):
+        ''' Draw
+        描画処理を行います。
+        '''
         if not self._size:
             self._size = self.GetClientSize()
         w, h = self._size
