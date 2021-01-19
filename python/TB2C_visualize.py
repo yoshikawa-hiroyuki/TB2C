@@ -192,6 +192,7 @@ class TB2C_visualize:
             tileLayer['id'] = path_base
             tileLayer['type'] = '3dtile'
             tileLayer['visible'] = 'true'
+            tileLayer['sseThreshold'] = 0
             tileLayer['url'] = 'http://localhost/data/' + ts_rpath
             self._layerList.append(tileLayer)
             
