@@ -179,6 +179,10 @@ class TB2C_visualize:
             ts_dict['asset']['gltfUpAxis'] = 'Z'
             ts_dict['root']['transform'] = [
                 1, 0, 0, 0,  0, 1, 0, 0,  0, 0, 1, 0,  0, 0, 0, 1]
+            bbox = [[v[:,0].min(), v[:,1].min(), v[:,2].min()],
+                    [v[:,0].max(), v[:,1].max(), v[:,2].max()]]
+            ts_dict['root']['boundingVolume']['box'] = self.bbox2Box(bbox)
+            del ts_dict['root']['boundingVolume']['region']
             try:
                 ts_f = open(ts_path, 'w')
                 json.dump(ts_dict, ts_f, indent=4)

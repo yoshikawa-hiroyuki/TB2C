@@ -143,15 +143,15 @@ class TB2C_Canvas(glcanvas.GLCanvas):
             self.lastx, self.lasty = self.x, self.y
             self.x, self.y = evt.GetPosition()
             if evt.ShiftDown():
-                tx = (self.lastx-self.x)*0.01*self._frustum._dist
-                ty = (self.y-self.lasty)*0.01*self._frustum._dist
+                tx = (self.lastx-self.x)*0.001*self._frustum._dist
+                ty = (self.y-self.lasty)*0.001*self._frustum._dist
                 self._frustum.trans(tx, ty, 0)
             elif evt.ControlDown():
                 tz = (self.lasty-self.y)*0.01*self._frustum._dist
                 self._frustum.trans(0, 0, tz)
             else:
-                h = (self.x-self.lastx)*0.01*90
-                p = (self.y-self.lasty)*0.01*90
+                h = (self.x-self.lastx)*0.001*90
+                p = (self.y-self.lasty)*0.001*90
                 self._frustum.rotHead(h)
                 self._frustum.rotPan(p)
             self.Refresh(False)
