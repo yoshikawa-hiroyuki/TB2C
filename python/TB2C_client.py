@@ -54,7 +54,7 @@ class TB2C_App(wx.App):
         self._chowder_id = None
 
         # toplevel frame
-        self._frame = wx.Frame(None, title='TB2C client', size=(800, 600))
+        self._frame = wx.Frame(None, title='TB2C client', size=(800, 500))
         fileMenu = wx.Menu()
         menu_connTB2CSrv = fileMenu.Append(wx.ID_ANY, 'Connect to TB2C server')
         fileMenu.AppendSeparator()
@@ -311,6 +311,7 @@ class TB2C_App(wx.App):
         bool: True=成功、False=失敗(self._lastErrにエラーメッセージを登録)
         '''
         layerList = None
+        upd_start = None
         if flag & TB2C_App.REQ_UPDDATA:
             if not self._tb2c_serv_url:
                 self._lastErr = 'not connected to TB2C server'
@@ -325,6 +326,7 @@ class TB2C_App(wx.App):
             }
             head = {'Content-Type': 'application/json'}
             req = urllib.request.Request(url, json.dumps(data).encode(), head)
+            upd_start = time.time()
             try:
                 with urllib.request.urlopen(req) as res:
                     res_bin = res.read()
@@ -351,7 +353,9 @@ class TB2C_App(wx.App):
                                                CM.m_v.tolist())
             while not self._chowder.is_done(content_req):
                 time.sleep(0.05)
-        
+        if upd_start:
+            print('{}: update elapsed time = {:.3f}[sec]'.format(
+                self.GetAppName(), time.time() - upd_start))
         return True
          
 
