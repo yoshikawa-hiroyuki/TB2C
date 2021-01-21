@@ -19,7 +19,7 @@ class MetaBinary():
 		headerLen = len(self.headerStr)
 		jsonDictLen = len(jsonStr)
 		binaryLen = len(binary)
-		print('size', (headerLen + 8 + jsonDictLen + binaryLen))
+		#print('size', (headerLen + 8 + jsonDictLen + binaryLen))
 
 		buffer = bytearray(headerLen + 8 + jsonDictLen + binaryLen)
 		struct.pack_into("8s", buffer, pos, self.headerStr)
